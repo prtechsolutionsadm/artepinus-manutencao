@@ -12,7 +12,7 @@ export default async function SetoresPage() {
   await exigirUsuario(["ADMIN"]);
   const setores = await db.setor.findMany({
     orderBy: { nome: "asc" },
-    include: { _count: { select: { usuarios: true, equipamentos: true, requisicoes: true } } },
+    include: { _count: { select: { equipamentos: true, requisicoes: true } } },
   });
 
   return (
@@ -32,7 +32,7 @@ export default async function SetoresPage() {
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
                 <span className="font-medium">{s.nome}</span>
                 <span className="flex items-center gap-2 text-xs text-stone-500">
-                  {s._count.usuarios} usuários · {s._count.equipamentos} equip. · {s._count.requisicoes} req.
+                  {s._count.equipamentos} equipamento{s._count.equipamentos === 1 ? "" : "s"} · {s._count.requisicoes} req.
                   <Pencil className="h-4 w-4 text-stone-400" />
                 </span>
               </summary>

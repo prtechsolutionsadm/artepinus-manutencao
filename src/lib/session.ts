@@ -30,7 +30,7 @@ export const usuarioAtual = cache(async () => {
   if (!sessao) return null;
   const usuario = await db.usuario.findUnique({
     where: { id: sessao.userId },
-    select: { id: true, nome: true, login: true, perfil: true, ativo: true, setorId: true, trocarSenha: true },
+    select: { id: true, nome: true, login: true, perfil: true, ativo: true, trocarSenha: true },
   });
   if (!usuario?.ativo) return null;
   return usuario;

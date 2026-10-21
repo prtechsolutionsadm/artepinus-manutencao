@@ -29,7 +29,6 @@ async function main() {
         perfil: "ADMIN",
         senhaHash: await bcrypt.hash(ADMIN.senha, 10),
         trocarSenha: true,
-        setorId: (await db.setor.findUnique({ where: { nome: "Manutenção" } }))?.id,
       },
     });
     console.log(`Admin criado: ${ADMIN.login} (troca de senha obrigatória no primeiro acesso)`);
@@ -52,7 +51,7 @@ async function demo() {
   const operador = await db.usuario.upsert({
     where: { login: "maria.operadora" },
     update: {},
-    create: { login: "maria.operadora", nome: "Maria Operadora", perfil: "SOLICITANTE", senhaHash, setorId: producao.id },
+    create: { login: "maria.operadora", nome: "Maria Operadora", perfil: "SOLICITANTE", senhaHash },
   });
 
   const serra = await db.equipamento.upsert({

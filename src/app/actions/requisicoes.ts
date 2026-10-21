@@ -27,10 +27,15 @@ export async function criarRequisicao(_: EstadoForm, form: FormData): Promise<Es
   const dados = novaSchema.safeParse(Object.fromEntries(form));
   if (!dados.success) return { erro: dados.error.issues[0].message };
 
+  // Sem setor informado, a requisição herda o setor do equipamento
+  const equipamento = dados.data.equipamentoId
+    ? await db.equipamento.findUnique({ where: { id: dados.data.equipamentoId }, select: { setorId: true } })
+    : null;
+
   const req = await db.requisicao.create({
     data: {
       ...dados.data,
-      setorId: dados.data.setorId ?? eu.setorId,
+      setorId: dados.data.setorId ?? equipamento?.setorId ?? null,
       solicitanteId: eu.id,
       historico: {
         create: { statusNovo: "ABERTA", usuarioId: eu.id, observacao: "Requisição aberta" },

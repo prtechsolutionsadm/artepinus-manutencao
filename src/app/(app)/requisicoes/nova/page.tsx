@@ -53,8 +53,8 @@ export default async function NovaRequisicaoPage() {
           </div>
           <div>
             <label htmlFor="setorId">Setor</label>
-            <select id="setorId" name="setorId" defaultValue={eu.setorId ?? ""} className="campo">
-              <option value="">—</option>
+            <select id="setorId" name="setorId" defaultValue="" className="campo">
+              <option value="">Mesmo do equipamento</option>
               {setores.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nome}

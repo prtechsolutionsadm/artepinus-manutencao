@@ -10,9 +10,9 @@ import type { Perfil } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Usuários" };
 
-type Usr = { id: string; nome: string; login: string; perfil: Perfil; setorId: string | null; ativo: boolean };
+type Usr = { id: string; nome: string; login: string; perfil: Perfil; ativo: boolean };
 
-function CamposUsuario({ u, setores }: { u?: Usr; setores: { id: string; nome: string }[] }) {
+function CamposUsuario({ u }: { u?: Usr }) {
   return (
     <>
       <input type="hidden" name="id" value={u?.id ?? ""} />
@@ -44,17 +44,6 @@ function CamposUsuario({ u, setores }: { u?: Usr; setores: { id: string; nome: s
           </select>
         </div>
         <div>
-          <label>Setor</label>
-          <select name="setorId" defaultValue={u?.setorId ?? ""} className="campo">
-            <option value="">—</option>
-            {setores.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label>{u ? "Nova senha (deixe em branco para manter)" : "Senha inicial *"}</label>
           <input name="senha" type="text" autoComplete="off" minLength={6} required={!u} className="campo" />
         </div>
@@ -77,13 +66,10 @@ function CamposUsuario({ u, setores }: { u?: Usr; setores: { id: string; nome: s
 
 export default async function UsuariosPage() {
   await exigirUsuario(["ADMIN"]);
-  const [usuarios, setores] = await Promise.all([
-    db.usuario.findMany({
-      orderBy: [{ ativo: "desc" }, { nome: "asc" }],
-      select: { id: true, nome: true, login: true, perfil: true, setorId: true, ativo: true, setor: true },
-    }),
-    db.setor.findMany({ orderBy: { nome: "asc" } }),
-  ]);
+  const usuarios = await db.usuario.findMany({
+    orderBy: [{ ativo: "desc" }, { nome: "asc" }],
+    select: { id: true, nome: true, login: true, perfil: true, ativo: true },
+  });
 
   return (
     <>
@@ -91,7 +77,7 @@ export default async function UsuariosPage() {
       <details className="cartao mb-6">
         <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold text-marca-700"><Plus className="h-4 w-4" /> Novo usuário</summary>
         <ActionForm action={salvarUsuario} limparAoSalvar className="mt-4">
-          <CamposUsuario setores={setores} />
+          <CamposUsuario />
         </ActionForm>
       </details>
       <ul className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
@@ -102,12 +88,11 @@ export default async function UsuariosPage() {
                 <span className="font-medium">{u.nome}</span>
                 <span className="font-mono text-sm text-stone-500">{u.login}</span>
                 <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">{PERFIL[u.perfil]}</Badge>
-                {u.setor && <span className="text-xs text-stone-500">{u.setor.nome}</span>}
                 {!u.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}
                 <Pencil className="ml-auto h-4 w-4 text-stone-400" />
               </summary>
               <ActionForm action={salvarUsuario} className="mt-3">
-                <CamposUsuario u={u} setores={setores} />
+                <CamposUsuario u={u} />
               </ActionForm>
             </details>
           </li>

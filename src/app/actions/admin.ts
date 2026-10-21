@@ -23,7 +23,6 @@ const usuarioSchema = z.object({
     .toLowerCase()
     .regex(LOGIN_REGEX, "Login deve ser no formato nome.sobrenome (sem acentos ou espaços)"),
   perfil: z.enum(["ADMIN", "MANUTENCAO", "SOLICITANTE"]),
-  setorId: z.preprocess(vazioParaNull, z.string().nullable()),
   senha: z.preprocess(vazioParaNull, z.string().min(6, "Senha com no mínimo 6 caracteres").nullable()),
   ativo: z.preprocess((v) => v === "on", z.boolean()),
   trocarSenha: z.preprocess((v) => v === "on", z.boolean()),

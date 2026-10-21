@@ -5,14 +5,12 @@ import { AtivarPush } from "@/components/AtivarPush";
 import { iniciais } from "@/lib/menu";
 import { Titulo } from "@/components/ui";
 import { PERFIL } from "@/lib/constantes";
-import { db } from "@/lib/db";
 import { exigirUsuario } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Meu perfil" };
 
 export default async function PerfilPage() {
   const eu = await exigirUsuario();
-  const setor = eu.setorId ? await db.setor.findUnique({ where: { id: eu.setorId } }) : null;
 
   return (
     <div className="mx-auto max-w-lg space-y-6">
@@ -24,10 +22,7 @@ export default async function PerfilPage() {
         <div className="min-w-0 text-sm">
           <div className="text-lg font-semibold">{eu.nome}</div>
           <div className="font-mono text-stone-600">{eu.login}</div>
-          <div className="text-stone-500">
-            {PERFIL[eu.perfil]}
-            {setor ? ` · ${setor.nome}` : ""}
-          </div>
+          <div className="text-stone-500">{PERFIL[eu.perfil]}</div>
         </div>
       </div>
       <AtivarPush />
