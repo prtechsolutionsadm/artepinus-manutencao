@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { formatarData, numeroRequisicao } from "@/lib/constantes";
 import { idsPorPerfil, notificar } from "@/lib/notificacoes";
+import { gerarPreventivas } from "@/lib/preventivas";
 
 /**
- * Lembrete das manutenções agendadas para hoje (horário de Brasília).
+ * Rotina diária (7h de Brasília): gera as preventivas dos planos e envia o lembrete
+ * das manutenções agendadas para hoje.
  * Chamado pelo Cron da Vercel (vercel.json), que envia "Authorization: Bearer $CRON_SECRET".
  */
 export async function GET(req: NextRequest) {
@@ -12,6 +14,9 @@ export async function GET(req: NextRequest) {
   if (!segredo || req.headers.get("authorization") !== `Bearer ${segredo}`) {
     return NextResponse.json({ erro: "não autorizado" }, { status: 401 });
   }
+
+  // Preventivas primeiro: as geradas para hoje já entram nos lembretes abaixo
+  const preventivas = await gerarPreventivas();
 
   const hoje = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const inicio = new Date(`${hoje}T00:00:00-03:00`);
@@ -38,5 +43,5 @@ export async function GET(req: NextRequest) {
     await db.requisicao.update({ where: { id: r.id }, data: { lembreteEm: new Date() } });
   }
 
-  return NextResponse.json({ enviados: agendadas.length });
+  return NextResponse.json({ preventivasGeradas: preventivas.length, lembretesEnviados: agendadas.length });
 }

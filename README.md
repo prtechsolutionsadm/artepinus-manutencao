@@ -13,18 +13,33 @@ manutenção da Artepinus — substituindo as requisições em papel.
 
   | | Admin | Gerente | Supervisor | Manutentor | Operador |
   |---|:-:|:-:|:-:|:-:|:-:|
-  | Abrir e comentar requisições | ✓ | ✓ | ✓ | ✓ | ✓ |
-  | Atualizar status, agendar, registrar serviço | ✓ | ✓ | ✓ | ✓ | |
+  | Abrir e comentar requisições, anexar fotos | ✓ | ✓ | ✓ | ✓ | ✓ |
+  | Atualizar status, agendar, registrar serviço, lançar horas, checklist | ✓ | ✓ | ✓ | ✓ | |
   | Atribuir responsável a outra pessoa | ✓ | ✓ | ✓ | só a si | |
   | Cancelar qualquer requisição | ✓ | ✓ | ✓ | | só as próprias abertas |
-  | Equipamentos | ✓ | ✓ | ✓ | ✓ | |
-  | Relatórios | ✓ | ✓ | ✓ | | |
-  | Usuários e setores | ✓ | ✓ | | | |
+  | Equipamentos, ficha e etiquetas QR | ✓ | ✓ | ✓ | ✓ | |
+  | Preventivas e checklists (cadastro) | ✓ | ✓ | ✓ | | |
+  | Indicadores e relatórios | ✓ | ✓ | ✓ | | |
+  | Usuários, setores e auditoria | ✓ | ✓ | | | |
 
   *Administrador* é exclusivo do desenvolvedor: não pode ser atribuído pela tela, e o gerente não vê nem edita essa conta.
 - **Status:** Aberta · Em análise · Planejada · Agendada · Em andamento · Aguardando peças · Adiada · Concluída · Cancelada.
   - Agendada exige data; Adiada e Cancelada exigem motivo; Concluída exige descrição do serviço.
 - **Histórico completo**: toda mudança de status e todo comentário ficam registrados com autor e data/hora.
+- **Fotos** do problema e do serviço (câmera ou galeria), comprimidas no celular e sem dados de GPS;
+  guardadas no banco e servidas só para quem está logado.
+- **Máquina parada**: marcada na abertura; o tempo parado é calculado até a máquina voltar a operar.
+- **Horas trabalhadas** por manutentor em cada requisição.
+- **Checklists** por tipo de serviço; a requisição só pode ser concluída com todos os itens marcados.
+- **Preventiva automática**: planos por equipamento (a cada N dias/semanas/meses) geram a requisição
+  já agendada, com responsável e checklist, alguns dias antes da data.
+- **QR Code** em cada equipamento: etiquetas para imprimir; apontar a câmera abre a requisição já com a
+  máquina escolhida. Ficha do equipamento com dados, preventivas e histórico.
+- **Indicadores**: disponibilidade, tempo parado, MTTR, MTBF, tempo médio de atendimento, preventivas no
+  prazo, horas por manutentor, requisições por mês, ranking de equipamentos e setores.
+- **Sem internet**: a nova requisição (com fotos) fica guardada no aparelho e é enviada sozinha quando a
+  conexão volta.
+- **Auditoria**: quem alterou o quê e quando (logins, usuários, equipamentos, requisições, planos…).
 - Tipo (corretiva, preventiva, preditiva, melhoria) e prioridade (baixa → urgente).
 - Painel inicial com indicadores, urgentes, agenda dos próximos 7 dias e "minhas requisições".
 - Listagem com busca (nº, título, equipamento) e filtros; histórico por equipamento.
@@ -36,7 +51,8 @@ manutenção da Artepinus — substituindo as requisições em papel.
 - **Notificações** no sininho e por **push** no celular/computador (ativar em *Perfil*):
   - supervisores e manutentores: requisição nova (o gerente recebe só as de prioridade alta/urgente);
   - solicitante: mudança de status e comentários; responsável: quando a requisição é atribuída a ele;
-  - lembrete às 7h (Brasília) das manutenções agendadas para o dia (Cron da Vercel, `vercel.json`).
+  - lembrete às 7h (Brasília) das manutenções agendadas para o dia, logo depois de gerar as preventivas
+    (Cron da Vercel, `vercel.json` → `/api/cron/lembretes`).
   - No iPhone o push só funciona com o app instalado na tela de início (iOS 16.4+).
 - **PWA**: instalável no celular ("Adicionar à tela inicial"), com tela de "sem conexão".
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Search } from "lucide-react";
 import { sair } from "@/app/actions/auth";
 import { BarraInferior, MenuLateral } from "@/components/Navegacao";
+import { SincronizadorOffline } from "@/components/SincronizadorOffline";
 import { Sininho } from "@/components/Sininho";
 import { PERFIL } from "@/lib/constantes";
 import { db } from "@/lib/db";
@@ -52,7 +53,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">{children}</main>
+        <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">
+          <SincronizadorOffline />
+          {children}
+        </main>
       </div>
 
       <BarraInferior grupos={grupos} />

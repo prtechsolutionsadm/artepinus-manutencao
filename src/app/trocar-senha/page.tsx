@@ -7,7 +7,8 @@ import { usuarioAtual } from "@/lib/session";
 export const metadata: Metadata = { title: "Defina sua senha" };
 
 /** Troca obrigatória de senha no primeiro acesso (ou após o admin redefinir a senha). */
-export default async function TrocarSenhaPage() {
+export default async function TrocarSenhaPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
   const eu = await usuarioAtual();
   if (!eu) redirect("/login");
   if (!eu.trocarSenha) redirect("/perfil");
@@ -20,6 +21,7 @@ export default async function TrocarSenhaPage() {
           <p className="text-sm text-stone-500">Antes de continuar, defina uma nova senha pessoal.</p>
         </div>
         <ActionForm action={trocarSenha} className="cartao space-y-4">
+          <input type="hidden" name="next" value={next ?? ""} />
           <div>
             <label htmlFor="atual">Senha atual (a que você recebeu)</label>
             <input id="atual" name="atual" type="password" autoComplete="current-password" required className="campo" />

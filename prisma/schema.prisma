@@ -11,11 +11,11 @@ datasource db {
 }
 
 enum Perfil {
-  ADMIN      // desenvolvedor do sistema (acesso total, não atribuível pela tela)
-  GERENTE    // gestão: usuários, setores, relatórios e todas as requisições
+  ADMIN // desenvolvedor do sistema (acesso total, não atribuível pela tela)
+  GERENTE // gestão: usuários, setores, relatórios e todas as requisições
   SUPERVISOR // coordena a manutenção: atribui, agenda, cancela, relatórios
   MANUTENTOR // executa: atualiza status e registra o serviço
-  OPERADOR   // abre requisições e acompanha
+  OPERADOR // abre requisições e acompanha
 }
 
 enum StatusRequisicao {
@@ -61,6 +61,12 @@ model Usuario {
   comentarios           Comentario[]
   notificacaos          Notificacao[]
   inscricaoPushes       InscricaoPush[]
+  anexos                Anexo[]
+  apontamentos          Apontamento[]
+  itensMarcados         ChecklistItem[]
+  planosResponsavel     PlanoPreventivo[] @relation("PlanosResponsavel")
+  planosCriados         PlanoPreventivo[] @relation("PlanosCriados")
+  auditorias            Auditoria[]
 }
 
 model Setor {
@@ -71,14 +77,18 @@ model Setor {
 }
 
 model Equipamento {
-  id          String       @id @default(cuid())
-  codigo      String       @unique // patrimônio / TAG
+  id          String            @id @default(cuid())
+  codigo      String            @unique // patrimônio / TAG
   nome        String
   descricao   String?
   setorId     String?
-  setor       Setor?       @relation(fields: [setorId], references: [id])
-  ativo       Boolean      @default(true)
+  setor       Setor?            @relation(fields: [setorId], references: [id])
+  ativo       Boolean           @default(true)
+  fabricante  String?
+  modelo      String?
+  numeroSerie String?
   requisicoes Requisicao[]
+  planos      PlanoPreventivo[]
 }
 
 model Requisicao {
@@ -105,13 +115,28 @@ model Requisicao {
   solucao       String? // o que foi feito
   lembreteEm    DateTime? // quando o lembrete do dia agendado foi enviado
 
+  // Equipamento parado por causa do problema (tempo de máquina parada)
+  maquinaParada Boolean   @default(false)
+  paradaInicio  DateTime?
+  paradaFim     DateTime?
+
+  /// Chave gerada no aparelho para requisições abertas sem internet (evita duplicar no reenvio)
+  chaveOffline String? @unique
+
+  planoId String? // preventiva gerada automaticamente por este plano
+  plano   PlanoPreventivo? @relation(fields: [planoId], references: [id], onDelete: SetNull)
+
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  historico   HistoricoStatus[]
-  comentarios Comentario[]
+  historico    HistoricoStatus[]
+  comentarios  Comentario[]
+  anexos       Anexo[]
+  apontamentos Apontamento[]
+  checklist    ChecklistItem[]
 
   @@index([status])
+  @@index([equipamentoId])
   @@index([solicitanteId])
   @@index([responsavelId])
   @@index([criadoEm])
@@ -167,4 +192,126 @@ model InscricaoPush {
   criadoEm  DateTime @default(now())
 
   @@index([usuarioId])
+}
+
+enum TipoAnexo {
+  PROBLEMA // foto do problema (abertura / comentários)
+  SERVICO // foto do serviço realizado
+}
+
+/// Foto anexada à requisição. Guardada comprimida no próprio banco (JPEG) e servida
+/// só para usuários logados pela rota /api/anexos/[id].
+model Anexo {
+  id           String     @id @default(cuid())
+  requisicaoId Int
+  requisicao   Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+  autorId      String
+  autor        Usuario    @relation(fields: [autorId], references: [id])
+  tipo         TipoAnexo  @default(PROBLEMA)
+  mime         String
+  dados        Bytes
+  miniatura    Bytes
+  largura      Int
+  altura       Int
+  tamanho      Int
+  criadoEm     DateTime   @default(now())
+
+  @@index([requisicaoId])
+}
+
+/// Horas trabalhadas por um manutentor numa requisição.
+model Apontamento {
+  id           String     @id @default(cuid())
+  requisicaoId Int
+  requisicao   Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+  usuarioId    String
+  usuario      Usuario    @relation(fields: [usuarioId], references: [id])
+  inicio       DateTime
+  minutos      Int
+  descricao    String?
+  criadoEm     DateTime   @default(now())
+
+  @@index([requisicaoId])
+  @@index([usuarioId, inicio])
+}
+
+model ChecklistModelo {
+  id     String                @id @default(cuid())
+  nome   String                @unique
+  ativo  Boolean               @default(true)
+  itens  ChecklistModeloItem[]
+  planos PlanoPreventivo[]
+}
+
+model ChecklistModeloItem {
+  id       String          @id @default(cuid())
+  modeloId String
+  modelo   ChecklistModelo @relation(fields: [modeloId], references: [id], onDelete: Cascade)
+  texto    String
+  ordem    Int
+
+  @@index([modeloId, ordem])
+}
+
+/// Item de checklist copiado para a requisição (alterar o modelo não muda requisições antigas).
+model ChecklistItem {
+  id           String     @id @default(cuid())
+  requisicaoId Int
+  requisicao   Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+  texto        String
+  ordem        Int
+  feito        Boolean    @default(false)
+  feitoPorId   String?
+  feitoPor     Usuario?   @relation(fields: [feitoPorId], references: [id])
+  feitoEm      DateTime?
+
+  @@index([requisicaoId, ordem])
+}
+
+enum UnidadeFrequencia {
+  DIAS
+  SEMANAS
+  MESES
+}
+
+/// Plano de manutenção preventiva: gera requisições agendadas automaticamente.
+model PlanoPreventivo {
+  id               String            @id @default(cuid())
+  equipamentoId    String
+  equipamento      Equipamento       @relation(fields: [equipamentoId], references: [id], onDelete: Cascade)
+  titulo           String
+  descricao        String?
+  intervalo        Int
+  unidade          UnidadeFrequencia @default(DIAS)
+  proximaData      DateTime // data/hora da próxima execução
+  antecedenciaDias Int               @default(3) // gera a requisição N dias antes
+  prioridade       Prioridade        @default(MEDIA)
+  responsavelId    String?
+  responsavel      Usuario?          @relation("PlanosResponsavel", fields: [responsavelId], references: [id])
+  checklistId      String?
+  checklist        ChecklistModelo?  @relation(fields: [checklistId], references: [id], onDelete: SetNull)
+  ativo            Boolean           @default(true)
+  criadoPorId      String // aparece como solicitante das requisições geradas
+  criadoPor        Usuario           @relation("PlanosCriados", fields: [criadoPorId], references: [id])
+  criadoEm         DateTime          @default(now())
+  requisicoes      Requisicao[]
+
+  @@index([ativo, proximaData])
+}
+
+/// Registro de quem alterou o quê (auditoria).
+model Auditoria {
+  id         String   @id @default(cuid())
+  usuarioId  String?
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+  acao       String // ex.: "requisicao.status", "usuario.editar", "login"
+  entidade   String // ex.: "Requisicao", "Usuario"
+  entidadeId String?
+  resumo     String
+  detalhes   Json?
+  criadoEm   DateTime @default(now())
+
+  @@index([criadoEm])
+  @@index([entidade, entidadeId])
+  @@index([usuarioId, criadoEm])
 }

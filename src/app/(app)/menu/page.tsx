@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ChevronRight, LogOut } from "lucide-react";
+import { ChevronRight } from "lucide-react";
+import { BotaoSair } from "@/components/BotaoSair";
 import { sair } from "@/app/actions/auth";
 import { ICONES } from "@/components/icones";
 import { PERFIL } from "@/lib/constantes";
@@ -45,11 +46,7 @@ export default async function MenuPage() {
           </ul>
         </section>
       ))}
-      <form action={sair}>
-        <button className="btn-secundario w-full py-3 text-rose-700">
-          <LogOut className="h-4 w-4" /> Sair
-        </button>
-      </form>
+      <BotaoSair sair={sair} variante="botao" />
     </div>
   );
 }

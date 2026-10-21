@@ -5,7 +5,8 @@ import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 
 export const metadata: Metadata = { title: "Entrar" };
 
-export default function LoginPage() {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+  const { next } = await searchParams;
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-gradient-to-br from-marca-700 to-marca-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
@@ -44,6 +45,7 @@ export default function LoginPage() {
             <p className="mt-1 text-sm text-stone-500">Use seu login no formato nome.sobrenome</p>
           </div>
           <ActionForm action={entrar} className="space-y-4">
+            <input type="hidden" name="next" value={next ?? ""} />
             <div>
               <label htmlFor="login">Login</label>
               <input

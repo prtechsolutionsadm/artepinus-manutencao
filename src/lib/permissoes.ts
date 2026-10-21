@@ -15,6 +15,12 @@ const REGRAS = {
   relatorios: ["ADMIN", "GERENTE", "SUPERVISOR"],
   usuarios: ["ADMIN", "GERENTE"],
   setores: ["ADMIN", "GERENTE"],
+  /** Histórico de alterações (auditoria). */
+  auditoria: ["ADMIN", "GERENTE"],
+  /** Planos de preventiva e modelos de checklist. */
+  preventivas: ["ADMIN", "GERENTE", "SUPERVISOR"],
+  /** Registrar horas trabalhadas e aplicar checklist em requisições. */
+  apontarHoras: ["ADMIN", "GERENTE", "SUPERVISOR", "MANUTENTOR"],
 } satisfies Record<string, Perfil[]>;
 
 export type Acao = keyof typeof REGRAS;

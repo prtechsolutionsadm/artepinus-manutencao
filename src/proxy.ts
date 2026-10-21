@@ -9,7 +9,9 @@ export default async function proxy(req: NextRequest) {
   const sessao = await lerSessao(req.cookies.get(SESSION_COOKIE)?.value);
 
   if (!publica && !sessao) {
-    return NextResponse.redirect(new URL("/login", req.nextUrl));
+    const login = new URL("/login", req.nextUrl);
+    if (path !== "/") login.searchParams.set("next", path + req.nextUrl.search);
+    return NextResponse.redirect(login);
   }
   if (publica && sessao) {
     return NextResponse.redirect(new URL("/", req.nextUrl));

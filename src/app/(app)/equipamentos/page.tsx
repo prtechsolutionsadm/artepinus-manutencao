@@ -1,100 +1,92 @@
 import type { Metadata } from "next";
-import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
+import { ChevronRight, OctagonAlert, Plus, QrCode, Wrench } from "lucide-react";
 import { salvarEquipamento } from "@/app/actions/admin";
-import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
+import { ActionForm } from "@/components/ActionForm";
+import { CamposEquipamento } from "@/components/CamposEquipamento";
+import { Expansivel } from "@/components/Expansivel";
 import { Badge, Titulo, Vazio } from "@/components/ui";
+import { STATUS_PENDENTES } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { exigirPermissao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Equipamentos" };
 
-type Equip = { id: string; codigo: string; nome: string; descricao: string | null; setorId: string | null; ativo: boolean };
-
-function CamposEquipamento({ e, setores }: { e?: Equip; setores: { id: string; nome: string }[] }) {
-  return (
-    <>
-      <input type="hidden" name="id" value={e?.id ?? ""} />
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div>
-          <label>Código / TAG *</label>
-          <input name="codigo" defaultValue={e?.codigo} required placeholder="LIX-02" className="campo uppercase" />
-        </div>
-        <div className="sm:col-span-2">
-          <label>Nome *</label>
-          <input name="nome" defaultValue={e?.nome} required placeholder="Lixadeira de cinta" className="campo" />
-        </div>
-        <div>
-          <label>Setor</label>
-          <select name="setorId" defaultValue={e?.setorId ?? ""} className="campo">
-            <option value="">—</option>
-            {setores.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nome}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="sm:col-span-2">
-          <label>Descrição</label>
-          <input name="descricao" defaultValue={e?.descricao ?? ""} placeholder="Fabricante, modelo, nº de série…" className="campo" />
-        </div>
-      </div>
-      <div className="mt-3 flex items-center justify-between">
-        <label className="flex items-center gap-2 font-normal">
-          <input type="checkbox" name="ativo" defaultChecked={e?.ativo ?? true} /> Ativo
-        </label>
-        <BotaoEnviar>{e ? "Salvar" : "Cadastrar"}</BotaoEnviar>
-      </div>
-    </>
-  );
-}
-
-export default async function EquipamentosPage() {
+export default async function EquipamentosPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await exigirPermissao("equipamentos");
+  const { q } = await searchParams;
+  const busca = q?.trim();
   const [equipamentos, setores] = await Promise.all([
     db.equipamento.findMany({
+      where: busca
+        ? { OR: [{ codigo: { contains: busca, mode: "insensitive" } }, { nome: { contains: busca, mode: "insensitive" } }] }
+        : undefined,
       orderBy: [{ ativo: "desc" }, { codigo: "asc" }],
-      include: { setor: true, _count: { select: { requisicoes: true } } },
+      include: {
+        setor: true,
+        _count: { select: { requisicoes: true, planos: { where: { ativo: true } } } },
+        requisicoes: { where: { status: { in: STATUS_PENDENTES } }, select: { maquinaParada: true, paradaFim: true } },
+      },
     }),
     db.setor.findMany({ orderBy: { nome: "asc" } }),
   ]);
 
   return (
     <>
-      <Titulo>Equipamentos</Titulo>
-      <details className="cartao mb-6">
-        <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold text-marca-700"><Plus className="h-4 w-4" /> Cadastrar equipamento</summary>
+      <Titulo
+        subtitulo="Clique num equipamento para ver a ficha, o histórico e o QR Code"
+        acao={
+          <Link href="/equipamentos/etiquetas" className="btn-secundario">
+            <QrCode className="h-4 w-4" /> Etiquetas QR
+          </Link>
+        }
+      >
+        Equipamentos
+      </Titulo>
+
+      <Expansivel className="cartao mb-4">
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold text-marca-700">
+          <Plus className="h-4 w-4" /> Cadastrar equipamento
+        </summary>
         <ActionForm action={salvarEquipamento} limparAoSalvar className="mt-4">
           <CamposEquipamento setores={setores} />
         </ActionForm>
-      </details>
+      </Expansivel>
+
+      <form method="get" className="mb-4">
+        <input name="q" type="search" defaultValue={q} placeholder="Buscar por código ou nome…" className="campo max-w-md" />
+      </form>
 
       {equipamentos.length === 0 ? (
-        <Vazio>Nenhum equipamento cadastrado.</Vazio>
+        <Vazio>Nenhum equipamento encontrado.</Vazio>
       ) : (
-        <ul className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
-          {equipamentos.map((e) => (
-            <li key={e.id} className="px-4 py-3">
-              <details>
-                <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2">
-                  <span className="font-mono text-sm font-semibold">{e.codigo}</span>
-                  <span>{e.nome}</span>
-                  {e.setor && <span className="text-xs text-stone-500">· {e.setor.nome}</span>}
-                  {!e.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}
-                  <Pencil className="ml-auto h-4 w-4 text-stone-400" />
-                </summary>
-                <div className="mt-2 text-sm">
-                  <Link href={`/requisicoes?q=${encodeURIComponent(e.codigo)}`} className="text-marca-600 hover:underline">
-                    Ver histórico de manutenção ({e._count.requisicoes})
-                  </Link>
-                </div>
-                <ActionForm action={salvarEquipamento} className="mt-3">
-                  <CamposEquipamento e={e} setores={setores} />
-                </ActionForm>
-              </details>
-            </li>
-          ))}
+        <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-xs">
+          {equipamentos.map((e) => {
+            const parada = e.requisicoes.some((r) => r.maquinaParada && !r.paradaFim);
+            return (
+              <li key={e.id}>
+                <Link href={`/equipamentos/${e.id}`} className="group flex items-center gap-3 px-4 py-3 hover:bg-stone-50 sm:px-5">
+                  <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${parada ? "bg-rose-50 text-rose-600" : "bg-stone-100 text-stone-500"}`}>
+                    {parada ? <OctagonAlert className="h-5 w-5" /> : <Wrench className="h-5 w-5" />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-sm font-semibold">{e.codigo}</span>
+                      <span className="truncate">{e.nome}</span>
+                      {!e.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}
+                      {parada && <Badge cor="bg-rose-600 text-white ring-rose-700">Parada</Badge>}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-stone-500">
+                      {e.setor?.nome ?? "Sem setor"} · {e._count.requisicoes} requisiç{e._count.requisicoes === 1 ? "ão" : "ões"}
+                      {e.requisicoes.length > 0 && ` · ${e.requisicoes.length} pendente${e.requisicoes.length > 1 ? "s" : ""}`}
+                      {e._count.planos > 0 && ` · ${e._count.planos} preventiva${e._count.planos > 1 ? "s" : ""}`}
+                    </span>
+                  </span>
+                  <ChevronRight className="h-4 w-4 text-stone-300 group-hover:text-stone-500" />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </>

@@ -96,3 +96,20 @@ export const STATUS_HEX: Record<StatusRequisicao, string> = {
   CONCLUIDA: "#059669",
   CANCELADA: "#e11d48",
 };
+
+/** 135 → "2h15"; 45 → "45 min". */
+export function formatarDuracao(minutos: number | null | undefined) {
+  if (minutos == null) return "—";
+  const m = Math.round(minutos);
+  if (m < 60) return `${m} min`;
+  const h = Math.floor(m / 60);
+  const r = m % 60;
+  if (h >= 48) return h % 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${Math.floor(h / 24)}d`;
+  return r ? `${h}h${String(r).padStart(2, "0")}` : `${h}h`;
+}
+
+/** Minutos entre duas datas (fim padrão = agora). */
+export function minutosEntre(inicio: Date | null | undefined, fim?: Date | null) {
+  if (!inicio) return null;
+  return Math.max(0, Math.round(((fim ?? new Date()).getTime() - inicio.getTime()) / 60000));
+}

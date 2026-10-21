@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ClipboardList, House, LayoutGrid, LogOut, Plus, type LucideIcon } from "lucide-react";
+import { CalendarDays, ClipboardList, House, LayoutGrid, Plus, type LucideIcon } from "lucide-react";
+import { BotaoSair } from "@/components/BotaoSair";
 import { ICONES } from "@/components/icones";
 import { iniciais, itemAtivo, type GrupoNav } from "@/lib/menu";
 
@@ -60,11 +61,7 @@ export function MenuLateral({ grupos, usuario, sair }: { grupos: GrupoNav[]; usu
           <div className="truncate text-sm font-semibold">{usuario.nome}</div>
           <div className="truncate text-xs text-stone-500">{usuario.perfilLabel}</div>
         </div>
-        <form action={sair}>
-          <button aria-label="Sair" title="Sair" className="grid h-9 w-9 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-rose-600">
-            <LogOut className="h-[18px] w-[18px]" />
-          </button>
-        </form>
+        <BotaoSair sair={sair} />
       </div>
     </aside>
   );

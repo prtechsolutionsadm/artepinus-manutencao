@@ -3,13 +3,14 @@
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { auditar, diferencas } from "@/lib/auditoria";
 import { db } from "@/lib/db";
 import { LOGIN_REGEX } from "@/lib/constantes";
 import { PERFIS_ATRIBUIVEIS, pode } from "@/lib/permissoes";
 import { exigirPermissao, exigirUsuario } from "@/lib/session";
 import type { EstadoForm } from "./auth";
 
-const vazioParaNull = (v: unknown) => (v === "" ? null : v);
+const vazioParaNull = (v: unknown) => (v === "" || v === undefined ? null : v);
 
 function erroUnico(e: unknown) {
   return typeof e === "object" && e !== null && "code" in e && e.code === "P2002";
@@ -35,7 +36,9 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
   if (!dados.success) return { erro: dados.error.issues[0].message };
   const { id, senha, trocarSenha, ...resto } = dados.data;
 
-  const existente = id ? await db.usuario.findUnique({ where: { id }, select: { perfil: true } }) : null;
+  const existente = id
+    ? await db.usuario.findUnique({ where: { id }, select: { nome: true, login: true, perfil: true, ativo: true } })
+    : null;
   if (id && !existente) return { erro: "Usuário não encontrado" };
 
   // O perfil Administrador é exclusivo do desenvolvedor: ninguém o atribui pela tela,
@@ -49,14 +52,20 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
   if (id === eu.id && !resto.ativo) return { erro: "Você não pode desativar o próprio usuário" };
 
   try {
-    if (id) {
+    if (id && existente) {
       await db.usuario.update({
         where: { id },
         data: { ...resto, ...(senha ? { senhaHash: await bcrypt.hash(senha, 10), trocarSenha } : {}) },
       });
+      const mudou = diferencas(existente, resto, ["nome", "login", "perfil", "ativo"]);
+      if (senha) mudou.senha = { de: null, para: "redefinida" };
+      if (Object.keys(mudou).length) {
+        await auditar({ usuarioId: eu.id, acao: "usuario.editar", entidade: "Usuario", entidadeId: id, resumo: `Editou o usuário ${resto.login}`, detalhes: mudou });
+      }
     } else {
       if (!senha) return { erro: "Defina uma senha inicial" };
-      await db.usuario.create({ data: { ...resto, trocarSenha, senhaHash: await bcrypt.hash(senha, 10) } });
+      const novo = await db.usuario.create({ data: { ...resto, trocarSenha, senhaHash: await bcrypt.hash(senha, 10) } });
+      await auditar({ usuarioId: eu.id, acao: "usuario.criar", entidade: "Usuario", entidadeId: novo.id, resumo: `Criou o usuário ${novo.login} (${novo.perfil})` });
     }
   } catch (e) {
     if (erroUnico(e)) return { erro: "Já existe um usuário com este login" };
@@ -67,13 +76,21 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
 }
 
 export async function salvarSetor(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  await exigirPermissao("setores");
+  const eu = await exigirPermissao("setores");
   const id = String(form.get("id") ?? "");
   const nome = String(form.get("nome") ?? "").trim();
   if (nome.length < 2) return { erro: "Informe o nome do setor" };
   try {
-    if (id) await db.setor.update({ where: { id }, data: { nome } });
-    else await db.setor.create({ data: { nome } });
+    if (id) {
+      const antes = await db.setor.findUniqueOrThrow({ where: { id } });
+      await db.setor.update({ where: { id }, data: { nome } });
+      if (antes.nome !== nome) {
+        await auditar({ usuarioId: eu.id, acao: "setor.editar", entidade: "Setor", entidadeId: id, resumo: `Renomeou o setor ${antes.nome} para ${nome}` });
+      }
+    } else {
+      const novo = await db.setor.create({ data: { nome } });
+      await auditar({ usuarioId: eu.id, acao: "setor.criar", entidade: "Setor", entidadeId: novo.id, resumo: `Criou o setor ${nome}` });
+    }
   } catch (e) {
     if (erroUnico(e)) return { erro: "Setor já cadastrado" };
     throw e;
@@ -87,6 +104,9 @@ const equipamentoSchema = z.object({
   codigo: z.string().trim().toUpperCase().min(1, "Informe o código/TAG"),
   nome: z.string().trim().min(2, "Informe o nome"),
   descricao: z.preprocess(vazioParaNull, z.string().trim().nullable()),
+  fabricante: z.preprocess(vazioParaNull, z.string().trim().max(80).nullable()),
+  modelo: z.preprocess(vazioParaNull, z.string().trim().max(80).nullable()),
+  numeroSerie: z.preprocess(vazioParaNull, z.string().trim().max(80).nullable()),
   setorId: z.preprocess(vazioParaNull, z.string().nullable()),
   ativo: z.preprocess((v) => v === "on", z.boolean()),
 });
@@ -98,8 +118,17 @@ export async function salvarEquipamento(_: EstadoForm, form: FormData): Promise<
   if (!dados.success) return { erro: dados.error.issues[0].message };
   const { id, ...resto } = dados.data;
   try {
-    if (id) await db.equipamento.update({ where: { id }, data: resto });
-    else await db.equipamento.create({ data: resto });
+    if (id) {
+      const antes = await db.equipamento.findUniqueOrThrow({ where: { id } });
+      await db.equipamento.update({ where: { id }, data: resto });
+      const mudou = diferencas(antes, resto, ["codigo", "nome", "descricao", "fabricante", "modelo", "numeroSerie", "setorId", "ativo"]);
+      if (Object.keys(mudou).length) {
+        await auditar({ usuarioId: eu.id, acao: "equipamento.editar", entidade: "Equipamento", entidadeId: id, resumo: `Editou o equipamento ${resto.codigo}`, detalhes: mudou });
+      }
+    } else {
+      const novo = await db.equipamento.create({ data: resto });
+      await auditar({ usuarioId: eu.id, acao: "equipamento.criar", entidade: "Equipamento", entidadeId: novo.id, resumo: `Cadastrou o equipamento ${novo.codigo} – ${novo.nome}` });
+    }
   } catch (e) {
     if (erroUnico(e)) return { erro: "Já existe um equipamento com este código" };
     throw e;

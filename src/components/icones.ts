@@ -1,4 +1,20 @@
-import { BarChart3, Bell, Building2, CalendarDays, ClipboardList, House, Plus, UserRound, Users, Wrench, type LucideIcon } from "lucide-react";
+import {
+  BarChart3,
+  Bell,
+  Building2,
+  CalendarClock,
+  CalendarDays,
+  ClipboardList,
+  Gauge,
+  History,
+  House,
+  ListChecks,
+  Plus,
+  UserRound,
+  Users,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import type { IconeMenu } from "@/lib/menu";
 
 export const ICONES: Record<IconeMenu, LucideIcon> = {
@@ -7,9 +23,13 @@ export const ICONES: Record<IconeMenu, LucideIcon> = {
   nova: Plus,
   agenda: CalendarDays,
   relatorios: BarChart3,
+  indicadores: Gauge,
   equipamentos: Wrench,
+  preventivas: CalendarClock,
+  checklists: ListChecks,
   usuarios: Users,
   setores: Building2,
+  auditoria: History,
   perfil: UserRound,
   notificacoes: Bell,
 };
