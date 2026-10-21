@@ -3,7 +3,7 @@
 Sistema web (PWA) para abrir, acompanhar e manter o histórico das requisições de
 manutenção da Artepinus — substituindo as requisições em papel.
 
-**Stack:** Next.js 16 (Node.js) · Prisma 7 · PostgreSQL (Neon) · Tailwind CSS 4 · hospedagem na Vercel.
+**Stack:** Next.js 16 (Node.js) · Prisma ORM 7 · Prisma Postgres · Tailwind CSS 4 · hospedagem na Vercel.
 
 ## Funcionalidades
 
@@ -24,11 +24,12 @@ manutenção da Artepinus — substituindo as requisições em papel.
 
 ## Rodando localmente
 
-Pré-requisitos: Node.js 20+ e um PostgreSQL (local ou Neon).
+Pré-requisito: Node.js 20+. O banco local é um Prisma Postgres rodando na sua máquina (`prisma dev`).
 
 ```bash
 npm install
-cp .env.example .env        # preencha DATABASE_URL e AUTH_SECRET
+npm run db:local            # em outro terminal: sobe o Prisma Postgres local e mostra a URL postgres://
+cp .env.example .env        # cole a URL postgres:// em DATABASE_URL e defina AUTH_SECRET
 npx prisma migrate dev      # cria as tabelas
 npm run db:seed             # cria o admin e os setores
 npm run dev                 # http://localhost:3000
@@ -39,21 +40,21 @@ ou defina `ADMIN_EMAIL`, `ADMIN_SENHA` e `ADMIN_NOME` antes de rodar o seed).
 
 Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `tecnico@…` e `operador@…`, senha `teste123`).
 
-## Deploy (Neon + Vercel)
+## Deploy (Prisma Postgres + Vercel)
 
-1. **Neon** – crie um projeto em [neon.tech](https://neon.tech) (região `sa-east-1` / São Paulo).
-   Em *Connection details* copie duas strings:
-   - **Pooled** (host com `-pooler`) → `DATABASE_URL`
-   - **Direct** (sem `-pooler`) → `DIRECT_URL`
-2. **Vercel** – importe este repositório do GitHub. Em *Settings → Environment Variables* adicione:
-   - `DATABASE_URL`, `DIRECT_URL`
+1. **Banco** – crie um Prisma Postgres de uma das duas formas:
+   - pela Vercel: no projeto, *Storage → Create Database → Prisma Postgres* (Marketplace). As variáveis
+     são adicionadas ao projeto automaticamente; ou
+   - em [console.prisma.io](https://console.prisma.io): crie o banco e copie a string de conexão.
+
+   Use a string **TCP direta**, que começa com `postgres://…@db.prisma.io:5432/…`, como `DATABASE_URL`.
+   (A string `prisma+postgres://` do Accelerate **não** é usada por este projeto.)
+2. **Vercel** – importe este repositório do GitHub. Em *Settings → Environment Variables* confira/adicione:
+   - `DATABASE_URL` (a `postgres://` direta)
    - `AUTH_SECRET` (gere com `openssl rand -base64 32`)
-
-   > Alternativa: em *Storage* da Vercel adicione a integração **Neon**, que cria o banco e as variáveis
-   > automaticamente (ajuste os nomes para `DATABASE_URL` e `DIRECT_URL` se necessário).
-3. **Migrations e usuário admin** – com as variáveis do Neon no seu `.env` local:
+3. **Migrations e usuário admin** – com a `DATABASE_URL` de produção no seu `.env` local:
    ```bash
-   npm run db:deploy   # aplica as migrations no Neon
+   npm run db:deploy   # aplica as migrations
    npm run db:seed     # cria o admin
    ```
    Opcional: para aplicar migrations a cada deploy, altere o *Build Command* da Vercel para
