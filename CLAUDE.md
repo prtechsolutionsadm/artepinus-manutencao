@@ -1,6 +1,8 @@
 # Manutenção Artepinus
 
-Next.js 16 (App Router) + Prisma 7 (client gerado em `src/generated/prisma`, adapter `@prisma/adapter-pg`) + Prisma Postgres (conexão TCP direta em `DATABASE_URL`; local com `npm run db:local`). Interface e código em português.
+Next.js 16 (App Router) + Prisma 7 (client gerado em `src/generated/prisma`) + Prisma Postgres (`DATABASE_URL` = string TCP direta; local com `npm run db:local`). Interface e código em português.
+
+- Driver escolhido em `src/lib/adaptador.ts`: `@prisma/adapter-ppg` (serverless) para `db.prisma.io` — na Vercel um pool TCP por instância estoura o limite de conexões; `@prisma/adapter-pg` com pool pequeno para Postgres local. Não troque de volta para TCP em produção.
 
 - Checks: `npx tsc --noEmit` e `npm run build`.
 - Mudou `prisma/schema.prisma`? Rode `npx prisma migrate dev --name <nome>` e commite a migration.

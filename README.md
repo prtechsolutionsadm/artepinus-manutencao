@@ -81,7 +81,8 @@ Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `ana.gerente`, `paulo
    - em [console.prisma.io](https://console.prisma.io): crie o banco e copie a string de conexão.
 
    Use a string **TCP direta**, que começa com `postgres://…@db.prisma.io:5432/…`, como `DATABASE_URL`.
-   (A string `prisma+postgres://` do Accelerate **não** é usada por este projeto.)
+   (A string `prisma+postgres://` do Accelerate **não** é usada por este projeto.) Em produção o app fala com
+   o Prisma Postgres pelo driver serverless (`@prisma/adapter-ppg`), que não segura conexões abertas.
 2. **Vercel** – importe este repositório do GitHub. Em *Settings → Environment Variables* confira/adicione:
    - `DATABASE_URL` (a `postgres://` direta)
    - `AUTH_SECRET` (gere com `openssl rand -base64 32`)
