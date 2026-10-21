@@ -1,3 +1,4 @@
+import { Pencil } from "lucide-react";
 import type { Metadata } from "next";
 import { salvarSetor } from "@/app/actions/admin";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
@@ -21,7 +22,7 @@ export default async function SetoresPage() {
         <label htmlFor="nome">Novo setor</label>
         <div className="flex gap-2">
           <input id="nome" name="nome" required placeholder="Ex.: Serraria" className="campo" />
-          <BotaoEnviar className="btn-primario mt-1">Adicionar</BotaoEnviar>
+          <BotaoEnviar className="btn-primario mt-1.5">Adicionar</BotaoEnviar>
         </div>
       </ActionForm>
       <ul className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
@@ -30,14 +31,15 @@ export default async function SetoresPage() {
             <details>
               <summary className="flex cursor-pointer list-none items-center justify-between gap-2">
                 <span className="font-medium">{s.nome}</span>
-                <span className="text-xs text-stone-500">
-                  {s._count.usuarios} usuários · {s._count.equipamentos} equip. · {s._count.requisicoes} req. · ✏️
+                <span className="flex items-center gap-2 text-xs text-stone-500">
+                  {s._count.usuarios} usuários · {s._count.equipamentos} equip. · {s._count.requisicoes} req.
+                  <Pencil className="h-4 w-4 text-stone-400" />
                 </span>
               </summary>
-              <ActionForm action={salvarSetor} className="mt-3 flex gap-2">
+              <ActionForm action={salvarSetor} className="mt-3 flex flex-wrap gap-2 [&>input]:w-auto [&>input]:min-w-0 [&>input]:flex-1">
                 <input type="hidden" name="id" value={s.id} />
                 <input name="nome" defaultValue={s.nome} required className="campo" aria-label="Nome do setor" />
-                <BotaoEnviar className="btn-secundario mt-1">Salvar</BotaoEnviar>
+                <BotaoEnviar className="btn-secundario mt-1.5">Salvar</BotaoEnviar>
               </ActionForm>
             </details>
           </li>

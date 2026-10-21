@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { trocarSenha } from "@/app/actions/auth";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
+import { AtivarPush } from "@/components/AtivarPush";
+import { iniciais } from "@/lib/menu";
 import { Titulo } from "@/components/ui";
 import { PERFIL } from "@/lib/constantes";
 import { db } from "@/lib/db";
@@ -15,14 +17,20 @@ export default async function PerfilPage() {
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <Titulo>Meu perfil</Titulo>
-      <div className="cartao space-y-1 text-sm">
-        <div className="text-lg font-semibold">{eu.nome}</div>
-        <div className="font-mono text-stone-600">{eu.login}</div>
-        <div className="text-stone-600">
-          {PERFIL[eu.perfil]}
-          {setor ? ` · ${setor.nome}` : ""}
+      <div className="cartao flex items-center gap-4">
+        <span className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-marca-100 text-xl font-semibold text-marca-700">
+          {iniciais(eu.nome)}
+        </span>
+        <div className="min-w-0 text-sm">
+          <div className="text-lg font-semibold">{eu.nome}</div>
+          <div className="font-mono text-stone-600">{eu.login}</div>
+          <div className="text-stone-500">
+            {PERFIL[eu.perfil]}
+            {setor ? ` · ${setor.nome}` : ""}
+          </div>
         </div>
       </div>
+      <AtivarPush />
       <ActionForm action={trocarSenha} limparAoSalvar className="cartao space-y-3">
         <h2 className="font-semibold">Trocar senha</h2>
         <div>

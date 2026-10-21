@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { FileSpreadsheet, FileText } from "lucide-react";
 import Link from "next/link";
 import { BotaoImprimir } from "@/components/BotaoImprimir";
 import { PrioridadeBadge, StatusBadge, Titulo } from "@/components/ui";
@@ -24,9 +25,9 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
         <Titulo
           acao={
             <div className="flex flex-wrap gap-2">
-              <BotaoImprimir rotulo="📄 Exportar PDF" />
+              <BotaoImprimir rotulo="Exportar PDF" icone={<FileText className="h-4 w-4" />} />
               <a href={`/relatorios/excel?${query}`} className="btn-primario">
-                📗 Exportar Excel
+                <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
               </a>
             </div>
           }

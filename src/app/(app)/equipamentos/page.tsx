@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Pencil, Plus } from "lucide-react";
 import Link from "next/link";
 import { salvarEquipamento } from "@/app/actions/admin";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
@@ -63,7 +64,7 @@ export default async function EquipamentosPage() {
     <>
       <Titulo>Equipamentos</Titulo>
       <details className="cartao mb-6">
-        <summary className="cursor-pointer font-semibold text-marca-700">+ Cadastrar equipamento</summary>
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold text-marca-700"><Plus className="h-4 w-4" /> Cadastrar equipamento</summary>
         <ActionForm action={salvarEquipamento} limparAoSalvar className="mt-4">
           <CamposEquipamento setores={setores} />
         </ActionForm>
@@ -81,7 +82,7 @@ export default async function EquipamentosPage() {
                   <span>{e.nome}</span>
                   {e.setor && <span className="text-xs text-stone-500">· {e.setor.nome}</span>}
                   {!e.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}
-                  <span className="ml-auto text-xs text-stone-500">✏️</span>
+                  <Pencil className="ml-auto h-4 w-4 text-stone-400" />
                 </summary>
                 <div className="mt-2 text-sm">
                   <Link href={`/requisicoes?q=${encodeURIComponent(e.codigo)}`} className="text-marca-600 hover:underline">

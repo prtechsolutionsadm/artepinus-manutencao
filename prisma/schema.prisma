@@ -59,6 +59,8 @@ model Usuario {
   requisicoesAtribuidas Requisicao[]      @relation("Responsavel")
   historicos            HistoricoStatus[]
   comentarios           Comentario[]
+  notificacaos          Notificacao[]
+  inscricaoPushes       InscricaoPush[]
 }
 
 model Setor {
@@ -102,6 +104,7 @@ model Requisicao {
   dataInicio    DateTime?
   dataConclusao DateTime?
   solucao       String? // o que foi feito
+  lembreteEm    DateTime? // quando o lembrete do dia agendado foi enviado
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
@@ -139,4 +142,30 @@ model Comentario {
   criadoEm     DateTime   @default(now())
 
   @@index([requisicaoId])
+}
+
+model Notificacao {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  titulo    String
+  mensagem  String
+  link      String?
+  lida      Boolean  @default(false)
+  criadoEm  DateTime @default(now())
+
+  @@index([usuarioId, lida, criadoEm])
+}
+
+/// Aparelho (navegador) inscrito para receber push.
+model InscricaoPush {
+  id        String   @id @default(cuid())
+  usuarioId String
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  criadoEm  DateTime @default(now())
+
+  @@index([usuarioId])
 }

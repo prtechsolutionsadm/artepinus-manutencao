@@ -1,10 +1,10 @@
 import type { Perfil, Prioridade, StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
 
 export const STATUS: Record<StatusRequisicao, { label: string; cor: string }> = {
-  ABERTA: { label: "Aberta", cor: "bg-sky-100 text-sky-800 ring-sky-300" },
+  ABERTA: { label: "Aberta", cor: "bg-blue-50 text-blue-700 ring-blue-200" },
   EM_ANALISE: { label: "Em análise", cor: "bg-indigo-100 text-indigo-800 ring-indigo-300" },
   PLANEJADA: { label: "Planejada", cor: "bg-violet-100 text-violet-800 ring-violet-300" },
-  AGENDADA: { label: "Agendada", cor: "bg-cyan-100 text-cyan-800 ring-cyan-300" },
+  AGENDADA: { label: "Agendada", cor: "bg-teal-50 text-teal-700 ring-teal-200" },
   EM_ANDAMENTO: { label: "Em andamento", cor: "bg-amber-100 text-amber-800 ring-amber-300" },
   AGUARDANDO_PECAS: { label: "Aguardando peças", cor: "bg-orange-100 text-orange-800 ring-orange-300" },
   ADIADA: { label: "Adiada", cor: "bg-stone-200 text-stone-800 ring-stone-400" },
@@ -84,10 +84,10 @@ export function dateParaDataLocal(d: Date | null | undefined) {
 
 /** Cores sólidas dos status (gráficos e Excel). */
 export const STATUS_HEX: Record<StatusRequisicao, string> = {
-  ABERTA: "#0284c7",
+  ABERTA: "#2563eb",
   EM_ANALISE: "#4f46e5",
   PLANEJADA: "#7c3aed",
-  AGENDADA: "#0891b2",
+  AGENDADA: "#0d9488",
   EM_ANDAMENTO: "#d97706",
   AGUARDANDO_PECAS: "#ea580c",
   ADIADA: "#78716c",

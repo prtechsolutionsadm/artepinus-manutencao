@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Pencil, Plus } from "lucide-react";
 import { salvarUsuario } from "@/app/actions/admin";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 import { Badge, Titulo } from "@/components/ui";
@@ -88,7 +89,7 @@ export default async function UsuariosPage() {
     <>
       <Titulo>Usuários</Titulo>
       <details className="cartao mb-6">
-        <summary className="cursor-pointer font-semibold text-marca-700">+ Novo usuário</summary>
+        <summary className="flex cursor-pointer list-none items-center gap-2 font-semibold text-marca-700"><Plus className="h-4 w-4" /> Novo usuário</summary>
         <ActionForm action={salvarUsuario} limparAoSalvar className="mt-4">
           <CamposUsuario setores={setores} />
         </ActionForm>
@@ -103,7 +104,7 @@ export default async function UsuariosPage() {
                 <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">{PERFIL[u.perfil]}</Badge>
                 {u.setor && <span className="text-xs text-stone-500">{u.setor.nome}</span>}
                 {!u.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}
-                <span className="ml-auto text-xs text-stone-500">✏️</span>
+                <Pencil className="ml-auto h-4 w-4 text-stone-400" />
               </summary>
               <ActionForm action={salvarUsuario} className="mt-3">
                 <CamposUsuario u={u} setores={setores} />

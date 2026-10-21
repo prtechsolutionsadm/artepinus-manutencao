@@ -24,6 +24,11 @@ manutenção da Artepinus — substituindo as requisições em papel.
   exportação em **PDF** (A4 com logo) e **Excel** (.xlsx formatado, com logo e aba de resumo).
 - Impressão da requisição com logo (para quem ainda precisa do papel).
 - **Responsivo**: menu superior no desktop, barra inferior + menu "Mais" no celular/tablet.
+- **Notificações** no sininho e por **push** no celular/computador (ativar em *Perfil*):
+  - equipe de manutenção: requisição nova (destaque para urgente/alta), cancelamento e comentários;
+  - solicitante: mudança de status e comentários; responsável: quando a requisição é atribuída a ele;
+  - lembrete às 7h (Brasília) das manutenções agendadas para o dia (Cron da Vercel, `vercel.json`).
+  - No iPhone o push só funciona com o app instalado na tela de início (iOS 16.4+).
 - **PWA**: instalável no celular ("Adicionar à tela inicial"), com tela de "sem conexão".
 
 ## Rodando localmente
@@ -55,6 +60,8 @@ Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `joao.tecnico` e `mar
 2. **Vercel** – importe este repositório do GitHub. Em *Settings → Environment Variables* confira/adicione:
    - `DATABASE_URL` (a `postgres://` direta)
    - `AUTH_SECRET` (gere com `openssl rand -base64 32`)
+   - `NEXT_PUBLIC_VAPID_PUBLIC_KEY` e `VAPID_PRIVATE_KEY` (gere com `npx web-push generate-vapid-keys`)
+   - `CRON_SECRET` (qualquer texto aleatório longo)
 3. **Migrations e usuário admin** – automáticos: a Vercel usa o script `vercel-build`, que roda
    `prisma migrate deploy` e o seed (cria setores e o admin só se ainda não existirem) antes do build.
 

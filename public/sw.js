@@ -1,6 +1,6 @@
 // Service worker do PWA: guarda os arquivos estáticos e mostra uma página
 // offline quando não há conexão. Dados sempre vêm da rede (nada sensível em cache).
-const CACHE = "artepinus-v1";
+const CACHE = "artepinus-v2";
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -39,4 +39,40 @@ self.addEventListener("fetch", (event) => {
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).catch(() => caches.match(OFFLINE)));
   }
+});
+
+// ---- Notificações push ----
+self.addEventListener("push", (event) => {
+  let dados = { titulo: "Manutenção Artepinus", mensagem: "", link: "/" };
+  try {
+    dados = { ...dados, ...event.data.json() };
+  } catch {
+    if (event.data) dados.mensagem = event.data.text();
+  }
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(dados.titulo, {
+        body: dados.mensagem,
+        icon: "/icons/icon-192.png",
+        badge: "/icons/badge-96.png",
+        data: { link: dados.link },
+        tag: dados.link,
+        renotify: true,
+      }),
+      // Avisa as abas abertas para atualizarem o sininho
+      self.clients.matchAll({ type: "window" }).then((abas) => abas.forEach((a) => a.postMessage({ tipo: "notificacao" }))),
+    ])
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const destino = new URL(event.notification.data?.link || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((abas) => {
+      const aba = abas.find((a) => a.url.startsWith(self.location.origin));
+      if (aba) return aba.navigate(destino).then((a) => (a || aba).focus());
+      return self.clients.openWindow(destino);
+    })
+  );
 });

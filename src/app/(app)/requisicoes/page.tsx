@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { ListaRequisicoes, selectItemRequisicao } from "@/components/ListaRequisicoes";
-import { BotaoLink, Titulo } from "@/components/ui";
+import { Titulo } from "@/components/ui";
 import { PRIORIDADE, STATUS, STATUS_ORDEM, STATUS_PENDENTES, TIPO } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { exigirUsuario } from "@/lib/session";
@@ -68,7 +69,16 @@ export default async function RequisicoesPage({ searchParams }: { searchParams: 
 
   return (
     <>
-      <Titulo acao={<BotaoLink href="/requisicoes/nova">+ Nova requisição</BotaoLink>}>Requisições</Titulo>
+      <Titulo
+        subtitulo="Todas as requisições de manutenção"
+        acao={
+          <Link href="/requisicoes/nova" className="btn-primario hidden lg:inline-flex">
+            <Plus className="h-4 w-4" /> Nova requisição
+          </Link>
+        }
+      >
+        Requisições
+      </Titulo>
 
       <form className="cartao mb-4 grid grid-cols-2 gap-3 md:grid-cols-6" method="get">
         <div className="col-span-2">
@@ -137,7 +147,7 @@ export default async function RequisicoesPage({ searchParams }: { searchParams: 
       </form>
 
       <p className="mb-2 text-sm text-stone-500">
-        {total} requisição{total === 1 ? "" : "ões"} encontrada{total === 1 ? "" : "s"}
+        {total} {total === 1 ? "requisição encontrada" : "requisições encontradas"}
       </p>
       <ListaRequisicoes itens={itens} />
 
@@ -145,7 +155,7 @@ export default async function RequisicoesPage({ searchParams }: { searchParams: 
         <nav className="mt-4 flex items-center justify-center gap-2 text-sm">
           {pagina > 1 && (
             <Link className="btn-secundario" href={linkPagina(pagina - 1)}>
-              ← Anterior
+              <ChevronLeft className="h-4 w-4" /> Anterior
             </Link>
           )}
           <span className="px-2 text-stone-600">
@@ -153,7 +163,7 @@ export default async function RequisicoesPage({ searchParams }: { searchParams: 
           </span>
           {pagina < paginas && (
             <Link className="btn-secundario" href={linkPagina(pagina + 1)}>
-              Próxima →
+              Próxima <ChevronRight className="h-4 w-4" />
             </Link>
           )}
         </nav>

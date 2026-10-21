@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { TriangleAlert } from "lucide-react";
 import { ListaRequisicoes, selectItemRequisicao, type ItemRequisicao } from "@/components/ListaRequisicoes";
 import { Titulo, Vazio } from "@/components/ui";
 import { db } from "@/lib/db";
@@ -42,7 +43,7 @@ export default async function AgendaPage() {
       <Titulo>Agenda de manutenção</Titulo>
       {atrasadas.length > 0 && (
         <section className="mb-8">
-          <h2 className="mb-2 font-semibold text-rose-700">⚠️ Agendadas com data vencida ({atrasadas.length})</h2>
+          <h2 className="mb-3 flex items-center gap-2 font-semibold text-rose-700"><TriangleAlert className="h-4 w-4" /> Agendadas com data vencida ({atrasadas.length})</h2>
           <ListaRequisicoes itens={atrasadas} />
         </section>
       )}

@@ -1,11 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { ehEquipe, exigirUsuario } from "@/lib/session";
-import { STATUS, STATUS_FINAIS, dataLocalParaDate } from "@/lib/constantes";
+import { PRIORIDADE, STATUS, STATUS_FINAIS, dataLocalParaDate, formatarData, numeroRequisicao } from "@/lib/constantes";
+import { idsEquipe, notificar } from "@/lib/notificacoes";
 import type { EstadoForm } from "./auth";
 
 const vazioParaNull = (v: unknown) => (v === "" ? null : v);
@@ -35,6 +37,15 @@ export async function criarRequisicao(_: EstadoForm, form: FormData): Promise<Es
       },
     },
   });
+
+  const urgente = req.prioridade === "URGENTE" || req.prioridade === "ALTA";
+  after(async () =>
+    notificar(await idsEquipe(eu.id), {
+      titulo: `${req.prioridade === "URGENTE" ? "🚨 URGENTE · " : urgente ? "⚠️ Prioridade alta · " : ""}Nova requisição ${numeroRequisicao(req.id)}`,
+      mensagem: `${req.titulo} — aberta por ${eu.nome}`,
+      link: `/requisicoes/${req.id}`,
+    })
+  );
 
   revalidatePath("/requisicoes");
   redirect(`/requisicoes/${req.id}`);
@@ -70,6 +81,7 @@ export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<Es
   }
 
   const mudouStatus = status !== atual.status;
+  const mudouData = (dataAgendada?.getTime() ?? null) !== (atual.dataAgendada?.getTime() ?? null);
   const agora = new Date();
 
   await db.requisicao.update({
@@ -79,6 +91,8 @@ export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<Es
       responsavelId,
       dataAgendada: dataAgendada ?? (status === "ADIADA" ? null : atual.dataAgendada),
       solucao: solucao ?? atual.solucao,
+      // reagendou: o lembrete do novo dia ainda precisa ser enviado
+      lembreteEm: mudouData ? null : undefined,
       dataInicio: status === "EM_ANDAMENTO" && !atual.dataInicio ? agora : atual.dataInicio,
       dataConclusao: status === "CONCLUIDA" ? (atual.dataConclusao ?? agora) : null,
       historico:
@@ -93,6 +107,31 @@ export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<Es
             }
           : undefined,
     },
+  });
+
+  const num = numeroRequisicao(id);
+  const link = `/requisicoes/${id}`;
+  after(async () => {
+    if (mudouStatus || (status === "AGENDADA" && mudouData)) {
+      const detalhe =
+        status === "AGENDADA" && dataAgendada
+          ? ` para ${formatarData(dataAgendada, true)}`
+          : observacao
+            ? ` — ${observacao}`
+            : "";
+      await notificar([atual.solicitanteId === eu.id ? null : atual.solicitanteId], {
+        titulo: `${num}: ${STATUS[status].label}`,
+        mensagem: `${atual.titulo}${detalhe}`,
+        link,
+      });
+    }
+    if (responsavelId && responsavelId !== atual.responsavelId && responsavelId !== eu.id) {
+      await notificar([responsavelId], {
+        titulo: `${num} atribuída a você`,
+        mensagem: `${atual.titulo} · Prioridade ${PRIORIDADE[atual.prioridade].label}`,
+        link,
+      });
+    }
   });
 
   revalidatePath(`/requisicoes/${id}`);
@@ -121,6 +160,13 @@ export async function cancelarPropria(_: EstadoForm, form: FormData): Promise<Es
       },
     },
   });
+  after(async () =>
+    notificar(req.responsavelId ? [req.responsavelId] : await idsEquipe(eu.id), {
+      titulo: `${numeroRequisicao(id)} cancelada pelo solicitante`,
+      mensagem: `${req.titulo} — ${motivo}`,
+      link: `/requisicoes/${id}`,
+    })
+  );
   revalidatePath(`/requisicoes/${id}`);
   return { ok: "Requisição cancelada" };
 }
@@ -131,13 +177,29 @@ export async function comentar(_: EstadoForm, form: FormData): Promise<EstadoFor
   const texto = String(form.get("texto") ?? "").trim();
   if (!texto) return { erro: "Escreva um comentário" };
 
-  const req = await db.requisicao.findUnique({ where: { id }, select: { status: true } });
+  const req = await db.requisicao.findUnique({
+    where: { id },
+    select: { status: true, titulo: true, solicitanteId: true, responsavelId: true },
+  });
   if (!req) return { erro: "Requisição não encontrada" };
   if (STATUS_FINAIS.includes(req.status) && !ehEquipe(eu.perfil)) {
     return { erro: "Requisição encerrada" };
   }
 
   await db.comentario.create({ data: { requisicaoId: id, autorId: eu.id, texto } });
+  after(async () => {
+    // Avisa solicitante e responsável; sem responsável, a equipe fica sabendo do comentário do solicitante.
+    const destinos = [req.solicitanteId, req.responsavelId];
+    if (!req.responsavelId && eu.id === req.solicitanteId) destinos.push(...(await idsEquipe()));
+    await notificar(
+      destinos.filter((d) => d !== eu.id),
+      {
+        titulo: `💬 ${eu.nome} comentou em ${numeroRequisicao(id)}`,
+        mensagem: texto.length > 140 ? `${texto.slice(0, 137)}…` : texto,
+        link: `/requisicoes/${id}`,
+      }
+    );
+  });
   revalidatePath(`/requisicoes/${id}`);
   return { ok: "Comentário adicionado" };
 }

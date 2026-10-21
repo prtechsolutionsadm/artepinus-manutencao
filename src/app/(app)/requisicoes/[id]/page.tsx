@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { atualizarStatus, cancelarPropria, comentar } from "@/app/actions/requisicoes";
@@ -53,8 +54,8 @@ export default async function RequisicaoPage({ params }: Params) {
     <div className="grid gap-6 lg:grid-cols-3 print:block">
       <div className="space-y-6 lg:col-span-2">
         <div className="nao-imprimir flex items-center justify-between">
-          <Link href="/requisicoes" className="text-sm font-medium text-marca-600 hover:underline">
-            ← Voltar
+          <Link href="/requisicoes" className="inline-flex items-center gap-1 text-sm font-medium text-stone-500 hover:text-stone-900">
+            <ArrowLeft className="h-4 w-4" /> Requisições
           </Link>
           <BotaoImprimir />
         </div>
@@ -77,7 +78,7 @@ export default async function RequisicaoPage({ params }: Params) {
           <h1 className="mt-2 text-xl font-bold">{req.titulo}</h1>
           <p className="mt-3 whitespace-pre-wrap text-stone-700">{req.descricao}</p>
 
-          <dl className="mt-5 grid grid-cols-1 gap-x-6 gap-y-3 border-t border-stone-200 pt-4 text-sm sm:grid-cols-2">
+          <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-3 border-t border-stone-200 pt-4 text-sm sm:gap-x-6">
             <Dado rotulo="Solicitante">{req.solicitante.nome}</Dado>
             <Dado rotulo="Aberta em">{formatarData(req.criadoEm, true)}</Dado>
             <Dado rotulo="Setor">{req.setor?.nome ?? "—"}</Dado>

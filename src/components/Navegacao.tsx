@@ -2,59 +2,120 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CalendarDays, ClipboardList, House, LayoutGrid, LogOut, Plus, type LucideIcon } from "lucide-react";
+import { ICONES } from "@/components/icones";
+import { iniciais, itemAtivo, type GrupoNav } from "@/lib/menu";
 
-import type { ItemNav } from "@/lib/menu";
+type Usuario = { nome: string; perfilLabel: string };
 
-function ativo(path: string, href: string) {
-  return href === "/" ? path === "/" : path === href || path.startsWith(href + "/");
-}
-
-export function NavDesktop({ itens }: { itens: ItemNav[] }) {
+export function MenuLateral({ grupos, usuario, sair }: { grupos: GrupoNav[]; usuario: Usuario; sair: () => Promise<void> }) {
   const path = usePathname();
   return (
-    <nav className="hidden items-center gap-0.5 lg:flex">
-      {itens.filter((i) => !i.soMobile).map((i) => (
-        <Link
-          key={i.href}
-          href={i.href}
-          className={`whitespace-nowrap rounded-lg px-2.5 py-2 text-sm font-medium ${
-            ativo(path, i.href) && !(i.href === "/requisicoes" && path === "/requisicoes/nova")
-              ? "bg-white/15 text-white"
-              : "text-marca-100 hover:bg-white/10 hover:text-white"
-          }`}
-        >
-          {i.label}
+    <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-stone-200 bg-white lg:flex">
+      <Link href="/" className="flex items-center gap-3 px-5 py-5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/icon-192.png" alt="" className="h-9 w-9 rounded-xl" />
+        <div className="leading-tight">
+          <div className="font-bold tracking-tight text-stone-900">Artepinus</div>
+          <div className="text-xs text-stone-500">Manutenção</div>
+        </div>
+      </Link>
+
+      <div className="px-4 pb-2">
+        <Link href="/requisicoes/nova" className="btn-primario w-full py-2.5 shadow-sm shadow-marca-700/20">
+          <Plus className="h-4 w-4" /> Nova requisição
         </Link>
-      ))}
-    </nav>
+      </div>
+
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
+        {grupos.map((g) => (
+          <div key={g.titulo}>
+            <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">{g.titulo}</div>
+            <ul className="space-y-0.5">
+              {g.itens.map((i) => {
+                const Icone = ICONES[i.icone];
+                const on = itemAtivo(path, i.href);
+                return (
+                  <li key={i.href}>
+                    <Link
+                      href={i.href}
+                      aria-current={on ? "page" : undefined}
+                      className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
+                        on ? "bg-marca-50 text-marca-700" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+                      }`}
+                    >
+                      <Icone className={`h-[18px] w-[18px] ${on ? "text-marca-600" : "text-stone-400"}`} strokeWidth={2} />
+                      {i.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ))}
+      </nav>
+
+      <div className="flex items-center gap-3 border-t border-stone-200 p-4">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-marca-100 text-sm font-semibold text-marca-700">
+          {iniciais(usuario.nome)}
+        </span>
+        <div className="min-w-0 flex-1 leading-tight">
+          <div className="truncate text-sm font-semibold">{usuario.nome}</div>
+          <div className="truncate text-xs text-stone-500">{usuario.perfilLabel}</div>
+        </div>
+        <form action={sair}>
+          <button aria-label="Sair" title="Sair" className="grid h-9 w-9 place-items-center rounded-full text-stone-400 hover:bg-stone-100 hover:text-rose-600">
+            <LogOut className="h-[18px] w-[18px]" />
+          </button>
+        </form>
+      </div>
+    </aside>
   );
 }
 
-export function NavMobile({ itens }: { itens: ItemNav[] }) {
+const ABAS: { href: string; label: string; Icone: LucideIcon }[] = [
+  { href: "/", label: "Início", Icone: House },
+  { href: "/requisicoes", label: "Requisições", Icone: ClipboardList },
+  { href: "/requisicoes/nova", label: "Nova", Icone: Plus },
+  { href: "/agenda", label: "Agenda", Icone: CalendarDays },
+  { href: "/menu", label: "Mais", Icone: LayoutGrid },
+];
+
+export function BarraInferior({ grupos }: { grupos: GrupoNav[] }) {
   const path = usePathname();
-  const visiveis = itens.filter((i) => i.mobile || i.soMobile);
+  const foraDasAbas = grupos.flatMap((g) => g.itens).some((i) => !ABAS.some((a) => a.href === i.href) && itemAtivo(path, i.href));
   return (
-    <nav
-      className="nao-imprimir fixed inset-x-0 bottom-0 z-20 grid border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden"
-      style={{ gridTemplateColumns: `repeat(${visiveis.length}, minmax(0, 1fr))` }}
-    >
-      {visiveis.map((i) => {
-        const on =
-          (ativo(path, i.href) && !(i.href === "/requisicoes" && path === "/requisicoes/nova")) ||
-          (i.href === "/menu" && itens.some((x) => !x.mobile && !x.soMobile && ativo(path, x.href)));
-        return (
-          <Link
-            key={i.href}
-            href={i.href}
-            className={`flex min-h-14 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium ${on ? "text-marca-600" : "text-stone-500"}`}
-          >
-            <span className="text-xl leading-none" aria-hidden>
-              {i.icone}
-            </span>
-            {i.label}
-          </Link>
-        );
-      })}
+    <nav className="nao-imprimir fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <ul className="mx-auto grid max-w-lg grid-cols-5">
+        {ABAS.map(({ href, label, Icone }) => {
+          const on = href === "/menu" ? path === "/menu" || foraDasAbas : itemAtivo(path, href);
+          if (href === "/requisicoes/nova") {
+            return (
+              <li key={href} className="flex justify-center">
+                <Link
+                  href={href}
+                  aria-label="Nova requisição"
+                  className="-mt-5 grid h-14 w-14 place-items-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-700/30 ring-4 ring-white active:scale-95"
+                >
+                  <Plus className="h-6 w-6" strokeWidth={2.5} />
+                </Link>
+              </li>
+            );
+          }
+          return (
+            <li key={href}>
+              <Link
+                href={href}
+                aria-current={on ? "page" : undefined}
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] font-medium ${on ? "text-marca-700" : "text-stone-500"}`}
+              >
+                <Icone className="h-[22px] w-[22px]" strokeWidth={on ? 2.4 : 2} />
+                {label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 }

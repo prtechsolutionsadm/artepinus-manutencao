@@ -31,26 +31,26 @@ export function ActionForm({ action, children, className, limparAoSalvar, aoSalv
   return (
     <form
       ref={ref}
-      className={className}
       onSubmit={(e) => {
         e.preventDefault();
         const dados = new FormData(e.currentTarget);
         startTransition(() => executar(dados));
       }}
     >
-      <fieldset disabled={pendente} className="contents">
+      {/* O fieldset recebe o layout do formulário; desabilitado enquanto salva. */}
+      <fieldset disabled={pendente} className={`min-w-0 ${className ?? ""}`}>
         {children}
+        {estado?.erro && (
+          <p role="alert" className="mt-3 w-full rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
+            {estado.erro}
+          </p>
+        )}
+        {estado?.ok && (
+          <p role="status" className="mt-3 w-full rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
+            {estado.ok}
+          </p>
+        )}
       </fieldset>
-      {estado?.erro && (
-        <p role="alert" className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-800 ring-1 ring-rose-200">
-          {estado.erro}
-        </p>
-      )}
-      {estado?.ok && (
-        <p role="status" className="mt-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800 ring-1 ring-emerald-200">
-          {estado.ok}
-        </p>
-      )}
     </form>
   );
 }
