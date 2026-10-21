@@ -12,13 +12,10 @@ export function MenuLateral({ grupos, usuario, sair }: { grupos: GrupoNav[]; usu
   const path = usePathname();
   return (
     <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-stone-200 bg-white lg:flex">
-      <Link href="/" className="flex items-center gap-3 px-5 py-5">
+      <Link href="/" className="flex flex-col items-center gap-1 px-5 pb-4 pt-6" aria-label="Artepinus · Início">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/icons/icon-192.png" alt="" className="h-9 w-9 rounded-xl" />
-        <div className="leading-tight">
-          <div className="font-bold tracking-tight text-stone-900">Artepinus</div>
-          <div className="text-xs text-stone-500">Manutenção</div>
-        </div>
+        <img src="/logo.svg" alt="Artepinus" className="h-16 w-auto" />
+        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">Manutenção</div>
       </Link>
 
       <div className="px-4 pb-2">

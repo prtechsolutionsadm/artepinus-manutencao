@@ -7,11 +7,11 @@ export const metadata: Metadata = {
   description: "Requisições e histórico de manutenção da Artepinus",
   applicationName: "Manutenção Artepinus",
   appleWebApp: { capable: true, title: "Manutenção", statusBarStyle: "default" },
-  icons: { icon: "/icons/icon-192.png", apple: "/icons/apple-touch-icon.png" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#23703e",
+  themeColor: "#ffffff",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

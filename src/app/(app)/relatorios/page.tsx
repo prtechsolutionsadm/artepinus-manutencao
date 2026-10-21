@@ -102,10 +102,10 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
       <article className="relatorio cartao space-y-6 sm:p-8">
         <header className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b-2 border-marca-600 pb-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={EMPRESA.logo} alt={EMPRESA.nome} className="h-14 w-14 rounded-xl object-contain sm:h-16 sm:w-16" />
+          <img src={EMPRESA.logo} alt={EMPRESA.nome} className="h-14 w-auto sm:h-16" />
           <div className="min-w-0 flex-1 basis-52">
             <div className="text-[11px] font-semibold uppercase tracking-wider text-marca-600 sm:text-xs sm:tracking-widest">
-              {EMPRESA.nome} · {EMPRESA.sistema}
+              {EMPRESA.razaoSocial}
             </div>
             <h2 className="text-xl font-bold sm:text-2xl">Relatório de Manutenção</h2>
             <div className="text-sm text-stone-600">
@@ -141,7 +141,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
           <Barras
             titulo="Por tipo"
             total={rel.resumo.total}
-            itens={rel.porTipo.map(([t, n]) => ({ rotulo: TIPO[t as TipoManutencao], n, cor: "#23703e" }))}
+            itens={rel.porTipo.map(([t, n]) => ({ rotulo: TIPO[t as TipoManutencao], n, cor: "#177009" }))}
           />
           <Barras titulo="Por setor" total={rel.resumo.total} itens={rel.porSetor.map(([s, n]) => ({ rotulo: s, n, cor: "#57534e" }))} />
         </section>
@@ -218,7 +218,7 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
         </section>
 
         <footer className="border-t border-stone-200 pt-3 text-center text-xs text-stone-400">
-          {EMPRESA.nome} · {EMPRESA.sistema} · Gerado em {geradoEm}
+          {EMPRESA.razaoSocial} · CNPJ {EMPRESA.cnpj} · {EMPRESA.sistema} · Gerado em {geradoEm}
         </footer>
       </article>
     </>

@@ -1,10 +1,10 @@
 // Service worker do PWA: guarda os arquivos estáticos e mostra uma página
 // offline quando não há conexão. Dados sempre vêm da rede (nada sensível em cache).
-const CACHE = "artepinus-v2";
+const CACHE = "artepinus-v3";
 const OFFLINE = "/offline.html";
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, "/icons/icon-192.png"])));
+  event.waitUntil(caches.open(CACHE).then((c) => c.addAll([OFFLINE, "/logo.svg"])));
   self.skipWaiting();
 });
 

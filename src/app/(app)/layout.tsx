@@ -17,13 +17,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-dvh">
       <MenuLateral grupos={grupos} usuario={{ nome: eu.nome, perfilLabel: PERFIL[eu.perfil] }} sair={sair} />
 
-      <div className="lg:pl-64">
+      <div className="lg:pl-64 print:pl-0">
         <header className="nao-imprimir sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
           <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:px-8">
             <Link href="/" className="flex items-center gap-2.5 lg:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/icons/icon-192.png" alt="" className="h-8 w-8 rounded-lg" />
-              <span className="font-bold tracking-tight">Artepinus</span>
+              <img src="/marca.svg" alt="" className="h-7 w-auto" />
+              <span className="font-serif text-lg font-bold italic tracking-wide text-[#177009]">ARTEPINUS</span>
             </Link>
 
             <form action="/requisicoes" className="relative hidden max-w-md flex-1 sm:block lg:block">

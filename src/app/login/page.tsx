@@ -9,13 +9,10 @@ export default function LoginPage() {
   return (
     <main className="grid min-h-dvh lg:grid-cols-2">
       <section className="relative hidden overflow-hidden bg-gradient-to-br from-marca-700 to-marca-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="flex items-center gap-3">
+        <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon-192.png" alt="" className="h-11 w-11 rounded-xl ring-1 ring-white/20" />
-          <div className="leading-tight">
-            <div className="text-lg font-bold">Artepinus</div>
-            <div className="text-sm text-marca-100">Sistema de Manutenção</div>
-          </div>
+          <img src="/logo-branco.svg" alt="Artepinus" className="h-24 w-auto" />
+          <div className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-marca-100">Sistema de Manutenção</div>
         </div>
         <div className="max-w-md space-y-8">
           <h2 className="text-4xl font-bold leading-tight">Requisições de manutenção sem papel.</h2>
@@ -31,7 +28,9 @@ export default function LoginPage() {
             </li>
           </ul>
         </div>
-        <div className="text-sm text-marca-100/70">© {new Date().getFullYear()} Artepinus</div>
+        <div className="text-sm text-marca-100/70">
+          Artepinus Indústria e Comércio de Madeiras · desde 1983
+        </div>
         <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -right-10 top-1/3 h-56 w-56 rounded-full bg-white/5" />
       </section>
@@ -40,7 +39,7 @@ export default function LoginPage() {
         <div className="w-full max-w-sm">
           <div className="mb-8 flex flex-col items-center text-center lg:items-start lg:text-left">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/icons/icon-192.png" alt="" className="mb-4 h-14 w-14 rounded-2xl shadow-md lg:hidden" />
+            <img src="/logo.svg" alt="Artepinus" className="mb-6 h-24 w-auto lg:hidden" />
             <h1 className="text-2xl font-bold">Entrar</h1>
             <p className="mt-1 text-sm text-stone-500">Use seu login no formato nome.sobrenome</p>
           </div>

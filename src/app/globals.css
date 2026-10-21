@@ -1,12 +1,13 @@
 @import "tailwindcss";
 
 @theme {
-  --color-marca-50: #f1f8f3;
-  --color-marca-100: #dcefe1;
-  --color-marca-500: #2f8a4e;
-  --color-marca-600: #23703e;
-  --color-marca-700: #1c5933;
-  --color-marca-900: #11351f;
+  /* derivada do verde do logo Artepinus (#177009) */
+  --color-marca-50: #f1f8ef;
+  --color-marca-100: #ddefd8;
+  --color-marca-500: #2b8a1d;
+  --color-marca-600: #1d7a10;
+  --color-marca-700: #17650c;
+  --color-marca-900: #0e3d08;
 }
 
 @layer base {

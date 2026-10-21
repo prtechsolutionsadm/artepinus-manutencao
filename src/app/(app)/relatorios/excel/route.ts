@@ -8,7 +8,7 @@ import { formatarDataCurta, gerarRelatorio } from "@/lib/relatorio";
 import { usuarioAtual } from "@/lib/session";
 import type { StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
 
-const VERDE = "FF23703E";
+const VERDE = "FF177009";
 const borda: Partial<ExcelJS.Borders> = {
   top: { style: "thin", color: { argb: "FFD6D3D1" } },
   bottom: { style: "thin", color: { argb: "FFD6D3D1" } },
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   const f = rel.filtros;
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = `${EMPRESA.nome} - ${EMPRESA.sistema}`;
+  wb.creator = `${EMPRESA.razaoSocial} - ${EMPRESA.sistema}`;
   wb.created = new Date();
 
   const ws = wb.addWorksheet("Requisições", {
@@ -53,9 +53,9 @@ export async function GET(req: NextRequest) {
 
   // Cabeçalho com logo
   try {
-    const logo = await readFile(path.join(process.cwd(), "public", EMPRESA.logo));
+    const logo = await readFile(path.join(process.cwd(), "public", EMPRESA.logoPng));
     const id = wb.addImage({ buffer: logo as unknown as ExcelJS.Buffer, extension: "png" });
-    ws.addImage(id, { tl: { col: 0.15, row: 0.15 }, ext: { width: 64, height: 64 } });
+    ws.addImage(id, { tl: { col: 0.1, row: 0.2 }, ext: { width: 96, height: 65 } }); // proporção do logo ≈ 1,48
   } catch {
     // sem logo: segue sem imagem
   }
@@ -65,7 +65,7 @@ export async function GET(req: NextRequest) {
   ws.mergeCells("B1:N1");
   ws.mergeCells("B2:N2");
   ws.mergeCells("B3:N3");
-  Object.assign(ws.getCell("B1"), { value: `${EMPRESA.nome} · Relatório de Manutenção` });
+  Object.assign(ws.getCell("B1"), { value: `Relatório de Manutenção · ${EMPRESA.razaoSocial}` });
   ws.getCell("B1").font = { bold: true, size: 16, color: { argb: VERDE } };
   ws.getCell("B2").value =
     `Período: ${formatarDataCurta(f.de)} a ${formatarDataCurta(f.ate)} (data de abertura)` +
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
   ws.getCell("B2").font = { size: 11, color: { argb: "FF57534E" } };
   ws.getCell("B3").value =
     `Total: ${rel.resumo.total} · Concluídas: ${rel.resumo.concluidas} · Pendentes: ${rel.resumo.pendentes} · ` +
-    `Canceladas: ${rel.resumo.canceladas} · Gerado por ${eu.nome} em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
+    `Canceladas: ${rel.resumo.canceladas} · CNPJ ${EMPRESA.cnpj} · Gerado por ${eu.nome} em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}`;
   ws.getCell("B3").font = { size: 10, color: { argb: "FF78716C" } };
 
   const cab = ws.getRow(6);
@@ -119,7 +119,7 @@ export async function GET(req: NextRequest) {
   // Aba de resumo
   const rs = wb.addWorksheet("Resumo");
   rs.columns = [{ width: 28 }, { width: 12 }, { width: 10 }];
-  rs.addRow([`${EMPRESA.nome} · Resumo`]).font = { bold: true, size: 14, color: { argb: VERDE } };
+  rs.addRow([`${EMPRESA.razaoSocial} · Resumo`]).font = { bold: true, size: 14, color: { argb: VERDE } };
   rs.addRow([`Período: ${formatarDataCurta(f.de)} a ${formatarDataCurta(f.ate)}`]);
   const bloco = (titulo: string, linhas: [string, number, string?][]) => {
     rs.addRow([]);

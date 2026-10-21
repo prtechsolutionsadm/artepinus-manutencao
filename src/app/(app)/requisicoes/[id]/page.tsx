@@ -63,9 +63,11 @@ export default async function RequisicaoPage({ params }: Params) {
         <article className="cartao">
           <div className="mb-4 hidden items-center gap-3 border-b-2 border-marca-600 pb-3 print:flex">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={EMPRESA.logo} alt="" className="h-12 w-12 object-contain" />
+            <img src={EMPRESA.logo} alt="" className="h-14 w-auto" />
             <div>
-              <div className="text-xs font-semibold uppercase tracking-widest text-marca-600">{EMPRESA.nome}</div>
+              <div className="text-xs font-semibold uppercase tracking-wider text-marca-600">
+                {EMPRESA.razaoSocial} · CNPJ {EMPRESA.cnpj}
+              </div>
               <div className="text-lg font-bold">Requisição de Manutenção {numeroRequisicao(req.id)}</div>
             </div>
           </div>

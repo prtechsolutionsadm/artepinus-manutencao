@@ -65,7 +65,8 @@ Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `joao.tecnico` e `mar
 3. **Migrations e usuário admin** – automáticos: a Vercel usa o script `vercel-build`, que roda
    `prisma migrate deploy` e o seed (cria setores e o admin só se ainda não existirem) antes do build.
 
-**Logo:** substitua `public/logo.png` pelo logo da empresa (PNG) — ele aparece nos relatórios, no Excel e nas impressões.
+**Logo e dados da empresa:** os logos ficam em `public/` (`logo.svg` completo, `logo-branco.svg`, `marca.svg` só com as
+árvores e `logo.png` transparente para o Excel); razão social e CNPJ ficam em `src/lib/empresa.ts`.
 
 ## Estrutura
 
