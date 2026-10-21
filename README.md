@@ -54,6 +54,8 @@ manutenção da Artepinus — substituindo as requisições em papel.
   - lembrete às 7h (Brasília) das manutenções agendadas para o dia, logo depois de gerar as preventivas
     (Cron da Vercel, `vercel.json` → `/api/cron/lembretes`).
   - No iPhone o push só funciona com o app instalado na tela de início (iOS 16.4+).
+- **Manual do usuário** dentro do app (`/ajuda`, conteúdo em `src/lib/manual.ts`): passo a passo por
+  tema, com busca, índice e impressão; cada perfil vê só as seções que usa.
 - **PWA**: instalável no celular ("Adicionar à tela inicial"), com tela de "sem conexão".
 
 ## Rodando localmente

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { CircleHelp, Search } from "lucide-react";
 import { sair } from "@/app/actions/auth";
 import { BarraInferior, MenuLateral } from "@/components/Navegacao";
 import { SincronizadorOffline } from "@/components/SincronizadorOffline";
@@ -41,6 +41,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <div className="ml-auto flex items-center gap-1">
               <Link href="/requisicoes" aria-label="Buscar" className="grid h-10 w-10 place-items-center rounded-full text-stone-600 hover:bg-stone-100 sm:hidden">
                 <Search className="h-5 w-5" />
+              </Link>
+              <Link href="/ajuda" aria-label="Manual do usuário" title="Manual do usuário" className="hidden h-10 w-10 place-items-center rounded-full text-stone-600 hover:bg-stone-100 sm:grid">
+                <CircleHelp className="h-5 w-5" />
               </Link>
               <Sininho naoLidasInicial={naoLidas} />
               <Link

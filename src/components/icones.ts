@@ -5,6 +5,7 @@ import {
   CalendarClock,
   CalendarDays,
   ClipboardList,
+  CircleHelp,
   Gauge,
   History,
   House,
@@ -32,4 +33,5 @@ export const ICONES: Record<IconeMenu, LucideIcon> = {
   auditoria: History,
   perfil: UserRound,
   notificacoes: Bell,
+  ajuda: CircleHelp,
 };

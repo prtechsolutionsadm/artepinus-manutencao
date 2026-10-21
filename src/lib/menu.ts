@@ -15,7 +15,8 @@ export type IconeMenu =
   | "setores"
   | "auditoria"
   | "perfil"
-  | "notificacoes";
+  | "notificacoes"
+  | "ajuda";
 
 export type ItemNav = { href: string; label: string; icone: IconeMenu };
 export type GrupoNav = { titulo: string; itens: ItemNav[] };
@@ -54,6 +55,7 @@ export function gruposMenu(perfil: Perfil): GrupoNav[] {
       itens: [
         { href: "/notificacoes", label: "Notificações", icone: "notificacoes" },
         { href: "/perfil", label: "Meu perfil", icone: "perfil" },
+        { href: "/ajuda", label: "Manual do usuário", icone: "ajuda" },
       ],
     },
   ];
