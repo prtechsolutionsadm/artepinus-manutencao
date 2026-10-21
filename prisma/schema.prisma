@@ -1,0 +1,141 @@
+// Sistema de Manutenção - Artepinus
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Perfil {
+  ADMIN // gerencia usuários, setores e equipamentos
+  MANUTENCAO // equipe de manutenção: planeja, agenda e executa
+  SOLICITANTE // abre requisições e acompanha
+}
+
+enum StatusRequisicao {
+  ABERTA // recém criada, aguardando análise
+  EM_ANALISE // manutenção avaliando
+  PLANEJADA // aprovada, aguardando data
+  AGENDADA // data definida
+  EM_ANDAMENTO // em execução
+  AGUARDANDO_PECAS // parada por falta de material
+  ADIADA // postergada
+  CONCLUIDA // finalizada
+  CANCELADA // não será executada
+}
+
+enum Prioridade {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum TipoManutencao {
+  CORRETIVA
+  PREVENTIVA
+  PREDITIVA
+  MELHORIA
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  perfil       Perfil   @default(SOLICITANTE)
+  ativo        Boolean  @default(true)
+  setorId      String?
+  setor        Setor?   @relation(fields: [setorId], references: [id])
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  requisicoesAbertas    Requisicao[]      @relation("Solicitante")
+  requisicoesAtribuidas Requisicao[]      @relation("Responsavel")
+  historicos            HistoricoStatus[]
+  comentarios           Comentario[]
+}
+
+model Setor {
+  id           String        @id @default(cuid())
+  nome         String        @unique
+  usuarios     Usuario[]
+  equipamentos Equipamento[]
+  requisicoes  Requisicao[]
+}
+
+model Equipamento {
+  id          String       @id @default(cuid())
+  codigo      String       @unique // patrimônio / TAG
+  nome        String
+  descricao   String?
+  setorId     String?
+  setor       Setor?       @relation(fields: [setorId], references: [id])
+  ativo       Boolean      @default(true)
+  requisicoes Requisicao[]
+}
+
+model Requisicao {
+  id         Int              @id @default(autoincrement()) // nº da requisição
+  titulo     String
+  descricao  String
+  tipo       TipoManutencao   @default(CORRETIVA)
+  prioridade Prioridade       @default(MEDIA)
+  status     StatusRequisicao @default(ABERTA)
+  local      String?
+
+  solicitanteId String
+  solicitante   Usuario      @relation("Solicitante", fields: [solicitanteId], references: [id])
+  responsavelId String?
+  responsavel   Usuario?     @relation("Responsavel", fields: [responsavelId], references: [id])
+  setorId       String?
+  setor         Setor?       @relation(fields: [setorId], references: [id])
+  equipamentoId String?
+  equipamento   Equipamento? @relation(fields: [equipamentoId], references: [id])
+
+  dataAgendada  DateTime?
+  dataInicio    DateTime?
+  dataConclusao DateTime?
+  solucao       String? // o que foi feito
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  historico   HistoricoStatus[]
+  comentarios Comentario[]
+
+  @@index([status])
+  @@index([solicitanteId])
+  @@index([responsavelId])
+  @@index([criadoEm])
+}
+
+model HistoricoStatus {
+  id             String            @id @default(cuid())
+  requisicaoId   Int
+  requisicao     Requisicao        @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+  statusAnterior StatusRequisicao?
+  statusNovo     StatusRequisicao
+  observacao     String?
+  usuarioId      String
+  usuario        Usuario           @relation(fields: [usuarioId], references: [id])
+  criadoEm       DateTime          @default(now())
+
+  @@index([requisicaoId])
+}
+
+model Comentario {
+  id           String     @id @default(cuid())
+  requisicaoId Int
+  requisicao   Requisicao @relation(fields: [requisicaoId], references: [id], onDelete: Cascade)
+  autorId      String
+  autor        Usuario    @relation(fields: [autorId], references: [id])
+  texto        String
+  criadoEm     DateTime   @default(now())
+
+  @@index([requisicaoId])
+}
