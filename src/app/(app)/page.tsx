@@ -5,7 +5,8 @@ import { ListaRequisicoes, selectItemRequisicao } from "@/components/ListaRequis
 import { Titulo } from "@/components/ui";
 import { STATUS, STATUS_HEX, STATUS_PENDENTES } from "@/lib/constantes";
 import { db } from "@/lib/db";
-import { ehEquipe, exigirUsuario } from "@/lib/session";
+import { exigirUsuario } from "@/lib/session";
+import { pode } from "@/lib/permissoes";
 
 function saudacao() {
   const h = Number(new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", hour12: false }));
@@ -14,7 +15,7 @@ function saudacao() {
 
 export default async function InicioPage() {
   const eu = await exigirUsuario();
-  const equipe = ehEquipe(eu.perfil);
+  const equipe = pode(eu.perfil, "atenderRequisicoes");
   const agora = new Date();
   const em7dias = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000);
   const hojeBR = new Date(agora.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 10);

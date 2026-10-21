@@ -47,8 +47,10 @@ export function sugerirLogin(nome: string) {
 
 export const PERFIL: Record<Perfil, string> = {
   ADMIN: "Administrador",
-  MANUTENCAO: "Manutenção",
-  SOLICITANTE: "Solicitante",
+  GERENTE: "Gerente",
+  SUPERVISOR: "Supervisor",
+  MANUTENTOR: "Manutentor",
+  OPERADOR: "Operador",
 };
 
 export function formatarData(d: Date | null | undefined, comHora = false) {

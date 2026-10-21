@@ -46,12 +46,22 @@ async function demo() {
   const tecnico = await db.usuario.upsert({
     where: { login: "joao.tecnico" },
     update: {},
-    create: { login: "joao.tecnico", nome: "João Técnico", perfil: "MANUTENCAO", senhaHash },
+    create: { login: "joao.tecnico", nome: "João Técnico", perfil: "MANUTENTOR", senhaHash },
+  });
+  await db.usuario.upsert({
+    where: { login: "ana.gerente" },
+    update: {},
+    create: { login: "ana.gerente", nome: "Ana Gerente", perfil: "GERENTE", senhaHash },
+  });
+  await db.usuario.upsert({
+    where: { login: "paulo.supervisor" },
+    update: {},
+    create: { login: "paulo.supervisor", nome: "Paulo Supervisor", perfil: "SUPERVISOR", senhaHash },
   });
   const operador = await db.usuario.upsert({
     where: { login: "maria.operadora" },
     update: {},
-    create: { login: "maria.operadora", nome: "Maria Operadora", perfil: "SOLICITANTE", senhaHash },
+    create: { login: "maria.operadora", nome: "Maria Operadora", perfil: "OPERADOR", senhaHash },
   });
 
   const serra = await db.equipamento.upsert({
@@ -94,7 +104,7 @@ async function demo() {
       },
     },
   });
-  console.log("Dados de demonstração criados (logins joao.tecnico / maria.operadora, senha teste123)");
+  console.log("Dados de demonstração criados (logins ana.gerente, paulo.supervisor, joao.tecnico, maria.operadora; senha teste123)");
 }
 
 main()

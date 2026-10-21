@@ -1,6 +1,7 @@
 import "server-only";
 import webpush from "web-push";
 import { db } from "@/lib/db";
+import type { Perfil } from "@/generated/prisma/enums";
 
 export type Aviso = { titulo: string; mensagem: string; link?: string };
 
@@ -58,11 +59,11 @@ export async function notificar(usuarioIds: (string | null | undefined)[], aviso
   );
 }
 
-/** Equipe de manutenção ativa (admins + manutenção), opcionalmente sem o autor da ação. */
-export async function idsEquipe(exceto?: string) {
-  const equipe = await db.usuario.findMany({
-    where: { ativo: true, perfil: { in: ["ADMIN", "MANUTENCAO"] }, ...(exceto ? { id: { not: exceto } } : {}) },
+/** Usuários ativos dos perfis indicados, opcionalmente sem o autor da ação. */
+export async function idsPorPerfil(perfis: Perfil[], exceto?: string) {
+  const usuarios = await db.usuario.findMany({
+    where: { ativo: true, perfil: { in: perfis }, ...(exceto ? { id: { not: exceto } } : {}) },
     select: { id: true },
   });
-  return equipe.map((u) => u.id);
+  return usuarios.map((u) => u.id);
 }

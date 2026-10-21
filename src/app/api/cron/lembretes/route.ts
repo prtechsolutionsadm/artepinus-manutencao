@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { formatarData, numeroRequisicao } from "@/lib/constantes";
-import { idsEquipe, notificar } from "@/lib/notificacoes";
+import { idsPorPerfil, notificar } from "@/lib/notificacoes";
 
 /**
  * Lembrete das manutenções agendadas para hoje (horário de Brasília).
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
     select: { id: true, titulo: true, dataAgendada: true, solicitanteId: true, responsavelId: true },
   });
 
-  const equipe = agendadas.some((r) => !r.responsavelId) ? await idsEquipe() : [];
+  const equipe = agendadas.some((r) => !r.responsavelId) ? await idsPorPerfil(["SUPERVISOR"]) : [];
   for (const r of agendadas) {
     const hora = formatarData(r.dataAgendada, true).split(", ")[1];
     await notificar([r.responsavelId ?? null, ...(r.responsavelId ? [] : equipe)], {

@@ -9,10 +9,19 @@ manutenção da Artepinus — substituindo as requisições em papel.
 
 - **Login** no formato `nome.sobrenome` + senha — o solicitante fica registrado automaticamente na requisição.
   Senha provisória definida pelo admin precisa ser trocada no primeiro acesso.
-- **Perfis**
-  - *Solicitante*: abre requisições, comenta, acompanha e cancela as próprias enquanto estão abertas.
-  - *Manutenção*: altera status, atribui responsável, agenda, registra o serviço realizado, cadastra equipamentos.
-  - *Administrador*: tudo acima + usuários e setores.
+- **Perfis** (regras em `src/lib/permissoes.ts`):
+
+  | | Admin | Gerente | Supervisor | Manutentor | Operador |
+  |---|:-:|:-:|:-:|:-:|:-:|
+  | Abrir e comentar requisições | ✓ | ✓ | ✓ | ✓ | ✓ |
+  | Atualizar status, agendar, registrar serviço | ✓ | ✓ | ✓ | ✓ | |
+  | Atribuir responsável a outra pessoa | ✓ | ✓ | ✓ | só a si | |
+  | Cancelar qualquer requisição | ✓ | ✓ | ✓ | | só as próprias abertas |
+  | Equipamentos | ✓ | ✓ | ✓ | ✓ | |
+  | Relatórios | ✓ | ✓ | ✓ | | |
+  | Usuários e setores | ✓ | ✓ | | | |
+
+  *Administrador* é exclusivo do desenvolvedor: não pode ser atribuído pela tela, e o gerente não vê nem edita essa conta.
 - **Status:** Aberta · Em análise · Planejada · Agendada · Em andamento · Aguardando peças · Adiada · Concluída · Cancelada.
   - Agendada exige data; Adiada e Cancelada exigem motivo; Concluída exige descrição do serviço.
 - **Histórico completo**: toda mudança de status e todo comentário ficam registrados com autor e data/hora.
@@ -25,7 +34,7 @@ manutenção da Artepinus — substituindo as requisições em papel.
 - Impressão da requisição com logo (para quem ainda precisa do papel).
 - **Responsivo**: menu superior no desktop, barra inferior + menu "Mais" no celular/tablet.
 - **Notificações** no sininho e por **push** no celular/computador (ativar em *Perfil*):
-  - equipe de manutenção: requisição nova (destaque para urgente/alta), cancelamento e comentários;
+  - supervisores e manutentores: requisição nova (o gerente recebe só as de prioridade alta/urgente);
   - solicitante: mudança de status e comentários; responsável: quando a requisição é atribuída a ele;
   - lembrete às 7h (Brasília) das manutenções agendadas para o dia (Cron da Vercel, `vercel.json`).
   - No iPhone o push só funciona com o app instalado na tela de início (iOS 16.4+).
@@ -46,7 +55,7 @@ npm run dev                 # http://localhost:3000
 
 Login inicial: `pablo.ribas` / `123456` (o sistema pede a troca da senha no primeiro acesso).
 
-Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `joao.tecnico` e `maria.operadora`, senha `teste123`).
+Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `ana.gerente`, `paulo.supervisor`, `joao.tecnico` e `maria.operadora`, senha `teste123`).
 
 ## Deploy (Prisma Postgres + Vercel)
 

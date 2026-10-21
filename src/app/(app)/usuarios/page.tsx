@@ -5,7 +5,8 @@ import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 import { Badge, Titulo } from "@/components/ui";
 import { PERFIL } from "@/lib/constantes";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirPermissao } from "@/lib/session";
+import { PERFIS_ATRIBUIVEIS } from "@/lib/permissoes";
 import type { Perfil } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Usuários" };
@@ -35,10 +36,10 @@ function CamposUsuario({ u }: { u?: Usr }) {
         </div>
         <div>
           <label>Perfil</label>
-          <select name="perfil" defaultValue={u?.perfil ?? "SOLICITANTE"} className="campo">
-            {Object.entries(PERFIL).map(([k, v]) => (
+          <select name="perfil" defaultValue={u?.perfil ?? "OPERADOR"} className="campo">
+            {(u?.perfil === "ADMIN" ? (["ADMIN"] as const) : PERFIS_ATRIBUIVEIS).map((k) => (
               <option key={k} value={k}>
-                {v}
+                {PERFIL[k]}
               </option>
             ))}
           </select>
@@ -65,8 +66,10 @@ function CamposUsuario({ u }: { u?: Usr }) {
 }
 
 export default async function UsuariosPage() {
-  await exigirUsuario(["ADMIN"]);
+  const eu = await exigirPermissao("usuarios");
+  // A conta de administrador (desenvolvedor) só aparece para o próprio administrador
   const usuarios = await db.usuario.findMany({
+    where: eu.perfil === "ADMIN" ? {} : { perfil: { not: "ADMIN" } },
     orderBy: [{ ativo: "desc" }, { nome: "asc" }],
     select: { id: true, nome: true, login: true, perfil: true, ativo: true },
   });

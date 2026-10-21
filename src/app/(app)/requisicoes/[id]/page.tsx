@@ -9,7 +9,8 @@ import { PrioridadeBadge, StatusBadge } from "@/components/ui";
 import { STATUS, STATUS_ORDEM, TIPO, dateParaDataLocal, formatarData, numeroRequisicao } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { EMPRESA } from "@/lib/empresa";
-import { ehEquipe, exigirUsuario } from "@/lib/session";
+import { exigirUsuario } from "@/lib/session";
+import { PERFIS_RESPONSAVEIS, pode } from "@/lib/permissoes";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -36,14 +37,22 @@ export default async function RequisicaoPage({ params }: Params) {
   });
   if (!req) notFound();
 
-  const equipe = ehEquipe(eu.perfil);
+  const equipe = pode(eu.perfil, "atenderRequisicoes");
+  const atribuiOutros = pode(eu.perfil, "atribuirResponsavel");
+  const podeCancelar = pode(eu.perfil, "cancelarRequisicoes");
+  // Quem atribui escolhe entre supervisores e manutentores; o manutentor só assume para si.
   const tecnicos = equipe
-    ? await db.usuario.findMany({
-        where: { ativo: true, perfil: { in: ["MANUTENCAO", "ADMIN"] } },
-        select: { id: true, nome: true },
-        orderBy: { nome: "asc" },
-      })
+    ? atribuiOutros
+      ? await db.usuario.findMany({
+          where: { ativo: true, perfil: { in: PERFIS_RESPONSAVEIS } },
+          select: { id: true, nome: true },
+          orderBy: { nome: "asc" },
+        })
+      : [{ id: eu.id, nome: `${eu.nome} (eu)` }]
     : [];
+  if (req.responsavel && !tecnicos.some((t) => t.id === req.responsavel!.id)) tecnicos.unshift(req.responsavel);
+  const statusPermitidos = STATUS_ORDEM.filter((s) => s !== "CANCELADA" || podeCancelar || req.status === "CANCELADA");
+  const podeDesatribuir = atribuiOutros || !req.responsavel || req.responsavel.id === eu.id;
 
   const linhaDoTempo = [
     ...req.historico.map((h) => ({ tipo: "status" as const, data: h.criadoEm, h })),
@@ -154,7 +163,7 @@ export default async function RequisicaoPage({ params }: Params) {
             <div>
               <label htmlFor="status">Status</label>
               <select id="status" name="status" defaultValue={req.status} className="campo">
-                {STATUS_ORDEM.map((s) => (
+                {statusPermitidos.map((s) => (
                   <option key={s} value={s}>
                     {STATUS[s].label}
                   </option>
@@ -164,7 +173,7 @@ export default async function RequisicaoPage({ params }: Params) {
             <div>
               <label htmlFor="responsavelId">Responsável</label>
               <select id="responsavelId" name="responsavelId" defaultValue={req.responsavel?.id ?? ""} className="campo">
-                <option value="">— Não atribuído —</option>
+                {podeDesatribuir && <option value="">— Não atribuído —</option>}
                 {tecnicos.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.nome}

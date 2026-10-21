@@ -5,7 +5,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { LOGIN_REGEX } from "@/lib/constantes";
-import { ehEquipe, exigirUsuario } from "@/lib/session";
+import { PERFIS_ATRIBUIVEIS, pode } from "@/lib/permissoes";
+import { exigirPermissao, exigirUsuario } from "@/lib/session";
 import type { EstadoForm } from "./auth";
 
 const vazioParaNull = (v: unknown) => (v === "" ? null : v);
@@ -22,21 +23,30 @@ const usuarioSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(LOGIN_REGEX, "Login deve ser no formato nome.sobrenome (sem acentos ou espaços)"),
-  perfil: z.enum(["ADMIN", "MANUTENCAO", "SOLICITANTE"]),
+  perfil: z.enum(["ADMIN", "GERENTE", "SUPERVISOR", "MANUTENTOR", "OPERADOR"]),
   senha: z.preprocess(vazioParaNull, z.string().min(6, "Senha com no mínimo 6 caracteres").nullable()),
   ativo: z.preprocess((v) => v === "on", z.boolean()),
   trocarSenha: z.preprocess((v) => v === "on", z.boolean()),
 });
 
 export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario(["ADMIN"]);
+  const eu = await exigirPermissao("usuarios");
   const dados = usuarioSchema.safeParse(Object.fromEntries(form));
   if (!dados.success) return { erro: dados.error.issues[0].message };
   const { id, senha, trocarSenha, ...resto } = dados.data;
 
-  if (id === eu.id && (!resto.ativo || resto.perfil !== "ADMIN")) {
-    return { erro: "Você não pode remover seu próprio acesso de administrador" };
+  const existente = id ? await db.usuario.findUnique({ where: { id }, select: { perfil: true } }) : null;
+  if (id && !existente) return { erro: "Usuário não encontrado" };
+
+  // O perfil Administrador é exclusivo do desenvolvedor: ninguém o atribui pela tela,
+  // e só um administrador edita a conta de outro administrador.
+  if (existente?.perfil === "ADMIN") {
+    if (eu.perfil !== "ADMIN") return { erro: "Sem permissão para alterar este usuário" };
+    if (resto.perfil !== "ADMIN" || !resto.ativo) return { erro: "O acesso de administrador não pode ser removido pela tela" };
+  } else if (!PERFIS_ATRIBUIVEIS.includes(resto.perfil)) {
+    return { erro: "Perfil inválido" };
   }
+  if (id === eu.id && !resto.ativo) return { erro: "Você não pode desativar o próprio usuário" };
 
   try {
     if (id) {
@@ -57,7 +67,7 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
 }
 
 export async function salvarSetor(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  await exigirUsuario(["ADMIN"]);
+  await exigirPermissao("setores");
   const id = String(form.get("id") ?? "");
   const nome = String(form.get("nome") ?? "").trim();
   if (nome.length < 2) return { erro: "Informe o nome do setor" };
@@ -83,7 +93,7 @@ const equipamentoSchema = z.object({
 
 export async function salvarEquipamento(_: EstadoForm, form: FormData): Promise<EstadoForm> {
   const eu = await exigirUsuario();
-  if (!ehEquipe(eu.perfil)) return { erro: "Sem permissão" };
+  if (!pode(eu.perfil, "equipamentos")) return { erro: "Sem permissão" };
   const dados = equipamentoSchema.safeParse(Object.fromEntries(form));
   if (!dados.success) return { erro: dados.error.issues[0].message };
   const { id, ...resto } = dados.data;

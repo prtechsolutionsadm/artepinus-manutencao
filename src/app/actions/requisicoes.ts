@@ -5,9 +5,10 @@ import { after } from "next/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { ehEquipe, exigirUsuario } from "@/lib/session";
+import { exigirUsuario } from "@/lib/session";
+import { AVISO_NOVA, PERFIS_RESPONSAVEIS, pode } from "@/lib/permissoes";
 import { PRIORIDADE, STATUS, STATUS_FINAIS, dataLocalParaDate, formatarData, numeroRequisicao } from "@/lib/constantes";
-import { idsEquipe, notificar } from "@/lib/notificacoes";
+import { idsPorPerfil, notificar } from "@/lib/notificacoes";
 import type { EstadoForm } from "./auth";
 
 const vazioParaNull = (v: unknown) => (v === "" ? null : v);
@@ -45,7 +46,7 @@ export async function criarRequisicao(_: EstadoForm, form: FormData): Promise<Es
 
   const urgente = req.prioridade === "URGENTE" || req.prioridade === "ALTA";
   after(async () =>
-    notificar(await idsEquipe(eu.id), {
+    notificar(await idsPorPerfil([...AVISO_NOVA.todas, ...(urgente ? AVISO_NOVA.urgentes : [])], eu.id), {
       titulo: `${req.prioridade === "URGENTE" ? "🚨 URGENTE · " : urgente ? "⚠️ Prioridade alta · " : ""}Nova requisição ${numeroRequisicao(req.id)}`,
       mensagem: `${req.titulo} — aberta por ${eu.nome}`,
       link: `/requisicoes/${req.id}`,
@@ -65,10 +66,10 @@ const statusSchema = z.object({
   solucao: z.preprocess(vazioParaNull, z.string().trim().nullable()),
 });
 
-/** Atualiza status / agendamento / responsável. Exclusivo da equipe de manutenção. */
+/** Atualiza status / agendamento / responsável. Gerente, supervisor e manutentor (e admin). */
 export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<EstadoForm> {
   const eu = await exigirUsuario();
-  if (!ehEquipe(eu.perfil)) return { erro: "Sem permissão" };
+  if (!pode(eu.perfil, "atenderRequisicoes")) return { erro: "Sem permissão" };
 
   const dados = statusSchema.safeParse(Object.fromEntries(form));
   if (!dados.success) return { erro: dados.error.issues[0].message };
@@ -77,6 +78,19 @@ export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<Es
 
   const atual = await db.requisicao.findUnique({ where: { id } });
   if (!atual) return { erro: "Requisição não encontrada" };
+
+  if (status === "CANCELADA" && atual.status !== "CANCELADA" && !pode(eu.perfil, "cancelarRequisicoes")) {
+    return { erro: "Só gerente ou supervisor pode cancelar requisições" };
+  }
+  // Manutentor: pode assumir para si ou deixar como está, mas não atribuir a outra pessoa
+  const soAssumeOuLarga = responsavelId === eu.id || (responsavelId === null && atual.responsavelId === eu.id);
+  if (responsavelId !== atual.responsavelId && !pode(eu.perfil, "atribuirResponsavel") && !soAssumeOuLarga) {
+    return { erro: "Você só pode assumir a requisição para você" };
+  }
+  if (responsavelId && responsavelId !== atual.responsavelId) {
+    const resp = await db.usuario.findUnique({ where: { id: responsavelId }, select: { perfil: true, ativo: true } });
+    if (!resp?.ativo || !PERFIS_RESPONSAVEIS.includes(resp.perfil)) return { erro: "Responsável inválido" };
+  }
 
   if (status === "AGENDADA" && !dataAgendada) return { erro: "Informe a data agendada" };
   if (status === "ADIADA" && !observacao) return { erro: "Informe o motivo do adiamento" };
@@ -166,7 +180,7 @@ export async function cancelarPropria(_: EstadoForm, form: FormData): Promise<Es
     },
   });
   after(async () =>
-    notificar(req.responsavelId ? [req.responsavelId] : await idsEquipe(eu.id), {
+    notificar(req.responsavelId ? [req.responsavelId] : await idsPorPerfil(["SUPERVISOR"], eu.id), {
       titulo: `${numeroRequisicao(id)} cancelada pelo solicitante`,
       mensagem: `${req.titulo} — ${motivo}`,
       link: `/requisicoes/${id}`,
@@ -187,7 +201,7 @@ export async function comentar(_: EstadoForm, form: FormData): Promise<EstadoFor
     select: { status: true, titulo: true, solicitanteId: true, responsavelId: true },
   });
   if (!req) return { erro: "Requisição não encontrada" };
-  if (STATUS_FINAIS.includes(req.status) && !ehEquipe(eu.perfil)) {
+  if (STATUS_FINAIS.includes(req.status) && !pode(eu.perfil, "atenderRequisicoes")) {
     return { erro: "Requisição encerrada" };
   }
 
@@ -195,7 +209,7 @@ export async function comentar(_: EstadoForm, form: FormData): Promise<EstadoFor
   after(async () => {
     // Avisa solicitante e responsável; sem responsável, a equipe fica sabendo do comentário do solicitante.
     const destinos = [req.solicitanteId, req.responsavelId];
-    if (!req.responsavelId && eu.id === req.solicitanteId) destinos.push(...(await idsEquipe()));
+    if (!req.responsavelId && eu.id === req.solicitanteId) destinos.push(...(await idsPorPerfil(PERFIS_RESPONSAVEIS)));
     await notificar(
       destinos.filter((d) => d !== eu.id),
       {

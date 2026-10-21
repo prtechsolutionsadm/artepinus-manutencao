@@ -11,9 +11,11 @@ datasource db {
 }
 
 enum Perfil {
-  ADMIN // gerencia usuários, setores e equipamentos
-  MANUTENCAO // equipe de manutenção: planeja, agenda e executa
-  SOLICITANTE // abre requisições e acompanha
+  ADMIN      // desenvolvedor do sistema (acesso total, não atribuível pela tela)
+  GERENTE    // gestão: usuários, setores, relatórios e todas as requisições
+  SUPERVISOR // coordena a manutenção: atribui, agenda, cancela, relatórios
+  MANUTENTOR // executa: atualiza status e registra o serviço
+  OPERADOR   // abre requisições e acompanha
 }
 
 enum StatusRequisicao {
@@ -48,7 +50,7 @@ model Usuario {
   login        String   @unique // nome.sobrenome
   trocarSenha  Boolean  @default(false) // obriga a trocar a senha no próximo acesso
   senhaHash    String
-  perfil       Perfil   @default(SOLICITANTE)
+  perfil       Perfil   @default(OPERADOR)
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt

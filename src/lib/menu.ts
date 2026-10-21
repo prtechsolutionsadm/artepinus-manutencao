@@ -1,4 +1,5 @@
 import type { Perfil } from "@/generated/prisma/enums";
+import { pode } from "@/lib/permissoes";
 
 export type IconeMenu =
   | "inicio"
@@ -16,7 +17,6 @@ export type ItemNav = { href: string; label: string; icone: IconeMenu };
 export type GrupoNav = { titulo: string; itens: ItemNav[] };
 
 export function gruposMenu(perfil: Perfil): GrupoNav[] {
-  const equipe = perfil === "ADMIN" || perfil === "MANUTENCAO";
   const grupos: GrupoNav[] = [
     {
       titulo: "Manutenção",
@@ -24,18 +24,14 @@ export function gruposMenu(perfil: Perfil): GrupoNav[] {
         { href: "/", label: "Início", icone: "inicio" },
         { href: "/requisicoes", label: "Requisições", icone: "requisicoes" },
         { href: "/agenda", label: "Agenda", icone: "agenda" },
-        { href: "/relatorios", label: "Relatórios", icone: "relatorios" },
+        ...(pode(perfil, "relatorios") ? [{ href: "/relatorios", label: "Relatórios", icone: "relatorios" as const }] : []),
       ],
     },
   ];
   const cadastros: ItemNav[] = [
-    ...(equipe ? [{ href: "/equipamentos", label: "Equipamentos", icone: "equipamentos" as const }] : []),
-    ...(perfil === "ADMIN"
-      ? [
-          { href: "/usuarios", label: "Usuários", icone: "usuarios" as const },
-          { href: "/setores", label: "Setores", icone: "setores" as const },
-        ]
-      : []),
+    ...(pode(perfil, "equipamentos") ? [{ href: "/equipamentos", label: "Equipamentos", icone: "equipamentos" as const }] : []),
+    ...(pode(perfil, "usuarios") ? [{ href: "/usuarios", label: "Usuários", icone: "usuarios" as const }] : []),
+    ...(pode(perfil, "setores") ? [{ href: "/setores", label: "Setores", icone: "setores" as const }] : []),
   ];
   if (cadastros.length) grupos.push({ titulo: "Cadastros", itens: cadastros });
   grupos.push({

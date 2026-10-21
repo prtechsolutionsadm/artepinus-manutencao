@@ -5,7 +5,7 @@ import { salvarEquipamento } from "@/app/actions/admin";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 import { Badge, Titulo, Vazio } from "@/components/ui";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirPermissao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Equipamentos" };
 
@@ -51,7 +51,7 @@ function CamposEquipamento({ e, setores }: { e?: Equip; setores: { id: string; n
 }
 
 export default async function EquipamentosPage() {
-  await exigirUsuario(["ADMIN", "MANUTENCAO"]);
+  await exigirPermissao("equipamentos");
   const [equipamentos, setores] = await Promise.all([
     db.equipamento.findMany({
       orderBy: [{ ativo: "desc" }, { codigo: "asc" }],

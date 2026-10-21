@@ -7,13 +7,13 @@ import { PRIORIDADE, STATUS, STATUS_HEX, STATUS_ORDEM, TIPO, formatarData, numer
 import { db } from "@/lib/db";
 import { EMPRESA } from "@/lib/empresa";
 import { formatarDataCurta, gerarRelatorio, type FiltrosRelatorio } from "@/lib/relatorio";
-import { exigirUsuario } from "@/lib/session";
+import { exigirPermissao } from "@/lib/session";
 import type { StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Relatórios" };
 
 export default async function RelatoriosPage({ searchParams }: { searchParams: Promise<FiltrosRelatorio> }) {
-  const eu = await exigirUsuario();
+  const eu = await exigirPermissao("relatorios");
   const [rel, setores] = await Promise.all([gerarRelatorio(await searchParams), db.setor.findMany({ orderBy: { nome: "asc" } })]);
   const f = rel.filtros;
   const query = new URLSearchParams(Object.entries(f).filter(([, v]) => v)).toString();

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { SESSION_COOKIE, assinarSessao, lerSessao, type Sessao } from "@/lib/jwt";
 import type { Perfil } from "@/generated/prisma/enums";
+import { pode, type Acao } from "@/lib/permissoes";
 
 const DURACAO_DIAS = 30;
 
@@ -46,6 +47,9 @@ export async function exigirUsuario(perfis?: Perfil[]) {
 
 export type UsuarioAtual = NonNullable<Awaited<ReturnType<typeof usuarioAtual>>>;
 
-export function ehEquipe(perfil: Perfil) {
-  return perfil === "ADMIN" || perfil === "MANUTENCAO";
+/** Usuário logado com permissão para a ação; senão volta para o início. */
+export async function exigirPermissao(acao: Acao) {
+  const usuario = await exigirUsuario();
+  if (!pode(usuario.perfil, acao)) redirect("/");
+  return usuario;
 }

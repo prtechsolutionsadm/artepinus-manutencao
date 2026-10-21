@@ -4,12 +4,12 @@ import { salvarSetor } from "@/app/actions/admin";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 import { Titulo } from "@/components/ui";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirPermissao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Setores" };
 
 export default async function SetoresPage() {
-  await exigirUsuario(["ADMIN"]);
+  await exigirPermissao("setores");
   const setores = await db.setor.findMany({
     orderBy: { nome: "asc" },
     include: { _count: { select: { equipamentos: true, requisicoes: true } } },

@@ -6,6 +6,7 @@ import { PRIORIDADE, STATUS, STATUS_HEX, TIPO, numeroRequisicao } from "@/lib/co
 import { EMPRESA } from "@/lib/empresa";
 import { formatarDataCurta, gerarRelatorio } from "@/lib/relatorio";
 import { usuarioAtual } from "@/lib/session";
+import { pode } from "@/lib/permissoes";
 import type { StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
 
 const VERDE = "FF177009";
@@ -22,6 +23,7 @@ const local = (d: Date | null) => (d ? new Date(d.getTime() - 3 * 60 * 60 * 1000
 export async function GET(req: NextRequest) {
   const eu = await usuarioAtual();
   if (!eu || eu.trocarSenha) return NextResponse.redirect(new URL("/login", req.url));
+  if (!pode(eu.perfil, "relatorios")) return NextResponse.json({ erro: "Sem permissão" }, { status: 403 });
 
   const rel = await gerarRelatorio(Object.fromEntries(req.nextUrl.searchParams));
   const f = rel.filtros;

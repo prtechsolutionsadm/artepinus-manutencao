@@ -1,0 +1,6 @@
+-- Novos perfis: Gerente, Supervisor, Manutentor (antes "Manutenção") e Operador (antes "Solicitante")
+ALTER TYPE "Perfil" RENAME VALUE 'MANUTENCAO' TO 'MANUTENTOR';
+ALTER TYPE "Perfil" RENAME VALUE 'SOLICITANTE' TO 'OPERADOR';
+ALTER TYPE "Perfil" ADD VALUE 'GERENTE' AFTER 'ADMIN';
+ALTER TYPE "Perfil" ADD VALUE 'SUPERVISOR' AFTER 'GERENTE';
+ALTER TABLE "Usuario" ALTER COLUMN "perfil" SET DEFAULT 'OPERADOR';
