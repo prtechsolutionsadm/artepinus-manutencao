@@ -17,7 +17,7 @@ export default async function PerfilPage() {
       <Titulo>Meu perfil</Titulo>
       <div className="cartao space-y-1 text-sm">
         <div className="text-lg font-semibold">{eu.nome}</div>
-        <div className="text-stone-600">{eu.email}</div>
+        <div className="font-mono text-stone-600">{eu.login}</div>
         <div className="text-stone-600">
           {PERFIL[eu.perfil]}
           {setor ? ` · ${setor.nome}` : ""}

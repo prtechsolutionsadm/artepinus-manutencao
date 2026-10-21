@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { LOGIN_REGEX } from "@/lib/constantes";
 import { ehEquipe, exigirUsuario } from "@/lib/session";
 import type { EstadoForm } from "./auth";
 
@@ -16,18 +17,23 @@ function erroUnico(e: unknown) {
 const usuarioSchema = z.object({
   id: z.preprocess(vazioParaNull, z.string().nullable()),
   nome: z.string().trim().min(2, "Informe o nome"),
-  email: z.string().trim().toLowerCase().email("E-mail inválido"),
+  login: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(LOGIN_REGEX, "Login deve ser no formato nome.sobrenome (sem acentos ou espaços)"),
   perfil: z.enum(["ADMIN", "MANUTENCAO", "SOLICITANTE"]),
   setorId: z.preprocess(vazioParaNull, z.string().nullable()),
   senha: z.preprocess(vazioParaNull, z.string().min(6, "Senha com no mínimo 6 caracteres").nullable()),
   ativo: z.preprocess((v) => v === "on", z.boolean()),
+  trocarSenha: z.preprocess((v) => v === "on", z.boolean()),
 });
 
 export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<EstadoForm> {
   const eu = await exigirUsuario(["ADMIN"]);
   const dados = usuarioSchema.safeParse(Object.fromEntries(form));
   if (!dados.success) return { erro: dados.error.issues[0].message };
-  const { id, senha, ...resto } = dados.data;
+  const { id, senha, trocarSenha, ...resto } = dados.data;
 
   if (id === eu.id && (!resto.ativo || resto.perfil !== "ADMIN")) {
     return { erro: "Você não pode remover seu próprio acesso de administrador" };
@@ -37,14 +43,14 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
     if (id) {
       await db.usuario.update({
         where: { id },
-        data: { ...resto, ...(senha ? { senhaHash: await bcrypt.hash(senha, 10) } : {}) },
+        data: { ...resto, ...(senha ? { senhaHash: await bcrypt.hash(senha, 10), trocarSenha } : {}) },
       });
     } else {
       if (!senha) return { erro: "Defina uma senha inicial" };
-      await db.usuario.create({ data: { ...resto, senhaHash: await bcrypt.hash(senha, 10) } });
+      await db.usuario.create({ data: { ...resto, trocarSenha, senhaHash: await bcrypt.hash(senha, 10) } });
     }
   } catch (e) {
-    if (erroUnico(e)) return { erro: "Já existe um usuário com este e-mail" };
+    if (erroUnico(e)) return { erro: "Já existe um usuário com este login" };
     throw e;
   }
   revalidatePath("/usuarios");

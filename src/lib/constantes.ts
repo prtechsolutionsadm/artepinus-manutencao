@@ -30,6 +30,21 @@ export const TIPO: Record<TipoManutencao, string> = {
   MELHORIA: "Melhoria",
 };
 
+/** Formato do login: nome.sobrenome (letras minúsculas sem acento, números, ponto, hífen ou _). */
+export const LOGIN_REGEX = /^[a-z0-9_-]+(\.[a-z0-9_-]+)+$/;
+
+/** Sugere um login nome.sobrenome a partir do nome completo. */
+export function sugerirLogin(nome: string) {
+  const partes = nome
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9 ]/g, "")
+    .split(/\s+/)
+    .filter(Boolean);
+  return partes.length > 1 ? `${partes[0]}.${partes[partes.length - 1]}` : (partes[0] ?? "");
+}
+
 export const PERFIL: Record<Perfil, string> = {
   ADMIN: "Administrador",
   MANUTENCAO: "Manutenção",
@@ -66,3 +81,16 @@ export function dateParaDataLocal(d: Date | null | undefined) {
   if (!d) return "";
   return new Date(d.getTime() - 3 * 60 * 60 * 1000).toISOString().slice(0, 16);
 }
+
+/** Cores sólidas dos status (gráficos e Excel). */
+export const STATUS_HEX: Record<StatusRequisicao, string> = {
+  ABERTA: "#0284c7",
+  EM_ANALISE: "#4f46e5",
+  PLANEJADA: "#7c3aed",
+  AGENDADA: "#0891b2",
+  EM_ANDAMENTO: "#d97706",
+  AGUARDANDO_PECAS: "#ea580c",
+  ADIADA: "#78716c",
+  CONCLUIDA: "#059669",
+  CANCELADA: "#e11d48",
+};

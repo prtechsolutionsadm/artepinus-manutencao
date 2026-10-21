@@ -9,7 +9,7 @@ import type { Perfil } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Usuários" };
 
-type Usr = { id: string; nome: string; email: string; perfil: Perfil; setorId: string | null; ativo: boolean };
+type Usr = { id: string; nome: string; login: string; perfil: Perfil; setorId: string | null; ativo: boolean };
 
 function CamposUsuario({ u, setores }: { u?: Usr; setores: { id: string; nome: string }[] }) {
   return (
@@ -21,8 +21,16 @@ function CamposUsuario({ u, setores }: { u?: Usr; setores: { id: string; nome: s
           <input name="nome" defaultValue={u?.nome} required className="campo" />
         </div>
         <div>
-          <label>E-mail (login) *</label>
-          <input name="email" type="email" defaultValue={u?.email} required className="campo" />
+          <label>Login (nome.sobrenome) *</label>
+          <input
+            name="login"
+            defaultValue={u?.login}
+            required
+            autoCapitalize="none"
+            spellCheck={false}
+            placeholder="nome.sobrenome"
+            className="campo lowercase"
+          />
         </div>
         <div>
           <label>Perfil</label>
@@ -50,10 +58,16 @@ function CamposUsuario({ u, setores }: { u?: Usr; setores: { id: string; nome: s
           <input name="senha" type="text" autoComplete="off" minLength={6} required={!u} className="campo" />
         </div>
       </div>
-      <div className="mt-3 flex items-center justify-between">
-        <label className="flex items-center gap-2 font-normal">
-          <input type="checkbox" name="ativo" defaultChecked={u?.ativo ?? true} /> Ativo
-        </label>
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-4">
+          <label className="flex items-center gap-2 font-normal">
+            <input type="checkbox" name="ativo" defaultChecked={u?.ativo ?? true} /> Ativo
+          </label>
+          <label className="flex items-center gap-2 font-normal">
+            <input type="checkbox" name="trocarSenha" defaultChecked />{" "}
+            {u ? "Ao redefinir a senha, exigir troca no próximo acesso" : "Exigir troca da senha no primeiro acesso"}
+          </label>
+        </div>
         <BotaoEnviar>{u ? "Salvar" : "Criar usuário"}</BotaoEnviar>
       </div>
     </>
@@ -65,7 +79,7 @@ export default async function UsuariosPage() {
   const [usuarios, setores] = await Promise.all([
     db.usuario.findMany({
       orderBy: [{ ativo: "desc" }, { nome: "asc" }],
-      select: { id: true, nome: true, email: true, perfil: true, setorId: true, ativo: true, setor: true },
+      select: { id: true, nome: true, login: true, perfil: true, setorId: true, ativo: true, setor: true },
     }),
     db.setor.findMany({ orderBy: { nome: "asc" } }),
   ]);
@@ -85,7 +99,7 @@ export default async function UsuariosPage() {
             <details>
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2">
                 <span className="font-medium">{u.nome}</span>
-                <span className="text-sm text-stone-500">{u.email}</span>
+                <span className="font-mono text-sm text-stone-500">{u.login}</span>
                 <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">{PERFIL[u.perfil]}</Badge>
                 {u.setor && <span className="text-xs text-stone-500">{u.setor.nome}</span>}
                 {!u.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}

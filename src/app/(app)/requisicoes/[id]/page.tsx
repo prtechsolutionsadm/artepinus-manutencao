@@ -7,6 +7,7 @@ import { BotaoImprimir } from "@/components/BotaoImprimir";
 import { PrioridadeBadge, StatusBadge } from "@/components/ui";
 import { STATUS, STATUS_ORDEM, TIPO, dateParaDataLocal, formatarData, numeroRequisicao } from "@/lib/constantes";
 import { db } from "@/lib/db";
+import { EMPRESA } from "@/lib/empresa";
 import { ehEquipe, exigirUsuario } from "@/lib/session";
 
 type Params = { params: Promise<{ id: string }> };
@@ -24,7 +25,7 @@ export default async function RequisicaoPage({ params }: Params) {
   const req = await db.requisicao.findUnique({
     where: { id },
     include: {
-      solicitante: { select: { nome: true, email: true } },
+      solicitante: { select: { nome: true } },
       responsavel: { select: { id: true, nome: true } },
       setor: true,
       equipamento: true,
@@ -49,7 +50,7 @@ export default async function RequisicaoPage({ params }: Params) {
   ].sort((a, b) => a.data.getTime() - b.data.getTime());
 
   return (
-    <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid gap-6 lg:grid-cols-3 print:block">
       <div className="space-y-6 lg:col-span-2">
         <div className="nao-imprimir flex items-center justify-between">
           <Link href="/requisicoes" className="text-sm font-medium text-marca-600 hover:underline">
@@ -59,6 +60,14 @@ export default async function RequisicaoPage({ params }: Params) {
         </div>
 
         <article className="cartao">
+          <div className="mb-4 hidden items-center gap-3 border-b-2 border-marca-600 pb-3 print:flex">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={EMPRESA.logo} alt="" className="h-12 w-12 object-contain" />
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-widest text-marca-600">{EMPRESA.nome}</div>
+              <div className="text-lg font-bold">Requisição de Manutenção {numeroRequisicao(req.id)}</div>
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-sm text-stone-500">{numeroRequisicao(req.id)}</span>
             <StatusBadge status={req.status} />

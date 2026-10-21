@@ -7,7 +7,8 @@ manutenção da Artepinus — substituindo as requisições em papel.
 
 ## Funcionalidades
 
-- **Login** por e-mail e senha — o solicitante fica registrado automaticamente na requisição.
+- **Login** no formato `nome.sobrenome` + senha — o solicitante fica registrado automaticamente na requisição.
+  Senha provisória definida pelo admin precisa ser trocada no primeiro acesso.
 - **Perfis**
   - *Solicitante*: abre requisições, comenta, acompanha e cancela as próprias enquanto estão abertas.
   - *Manutenção*: altera status, atribui responsável, agenda, registra o serviço realizado, cadastra equipamentos.
@@ -19,7 +20,10 @@ manutenção da Artepinus — substituindo as requisições em papel.
 - Painel inicial com indicadores, urgentes, agenda dos próximos 7 dias e "minhas requisições".
 - Listagem com busca (nº, título, equipamento) e filtros; histórico por equipamento.
 - Agenda com as manutenções agendadas por dia (e alerta das vencidas).
-- Impressão da requisição (para quem ainda precisa do papel).
+- **Relatórios** por período, status, tipo, prioridade e setor, com resumo e gráficos;
+  exportação em **PDF** (A4 com logo) e **Excel** (.xlsx formatado, com logo e aba de resumo).
+- Impressão da requisição com logo (para quem ainda precisa do papel).
+- **Responsivo**: menu superior no desktop, barra inferior + menu "Mais" no celular/tablet.
 - **PWA**: instalável no celular ("Adicionar à tela inicial"), com tela de "sem conexão".
 
 ## Rodando localmente
@@ -35,10 +39,9 @@ npm run db:seed             # cria o admin e os setores
 npm run dev                 # http://localhost:3000
 ```
 
-Login inicial: `admin@artepinus.com.br` / `trocar123` (troque em **Perfil** logo após entrar,
-ou defina `ADMIN_EMAIL`, `ADMIN_SENHA` e `ADMIN_NOME` antes de rodar o seed).
+Login inicial: `pablo.ribas` / `123456` (o sistema pede a troca da senha no primeiro acesso).
 
-Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `tecnico@…` e `operador@…`, senha `teste123`).
+Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `joao.tecnico` e `maria.operadora`, senha `teste123`).
 
 ## Deploy (Prisma Postgres + Vercel)
 
@@ -52,13 +55,10 @@ Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `tecnico@…` e `oper
 2. **Vercel** – importe este repositório do GitHub. Em *Settings → Environment Variables* confira/adicione:
    - `DATABASE_URL` (a `postgres://` direta)
    - `AUTH_SECRET` (gere com `openssl rand -base64 32`)
-3. **Migrations e usuário admin** – com a `DATABASE_URL` de produção no seu `.env` local:
-   ```bash
-   npm run db:deploy   # aplica as migrations
-   npm run db:seed     # cria o admin
-   ```
-   Opcional: para aplicar migrations a cada deploy, altere o *Build Command* da Vercel para
-   `prisma migrate deploy && npm run build`.
+3. **Migrations e usuário admin** – automáticos: a Vercel usa o script `vercel-build`, que roda
+   `prisma migrate deploy` e o seed (cria setores e o admin só se ainda não existirem) antes do build.
+
+**Logo:** substitua `public/logo.png` pelo logo da empresa (PNG) — ele aparece nos relatórios, no Excel e nas impressões.
 
 ## Estrutura
 

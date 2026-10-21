@@ -16,8 +16,18 @@ export default function LoginPage() {
         </div>
         <ActionForm action={entrar} className="cartao space-y-4">
           <div>
-            <label htmlFor="email">E-mail</label>
-            <input id="email" name="email" type="email" autoComplete="username" required className="campo" />
+            <label htmlFor="login">Login</label>
+            <input
+              id="login"
+              name="login"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              placeholder="nome.sobrenome"
+              required
+              className="campo"
+            />
           </div>
           <div>
             <label htmlFor="senha">Senha</label>

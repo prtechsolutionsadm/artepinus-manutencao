@@ -30,7 +30,7 @@ export const usuarioAtual = cache(async () => {
   if (!sessao) return null;
   const usuario = await db.usuario.findUnique({
     where: { id: sessao.userId },
-    select: { id: true, nome: true, email: true, perfil: true, ativo: true, setorId: true },
+    select: { id: true, nome: true, login: true, perfil: true, ativo: true, setorId: true, trocarSenha: true },
   });
   if (!usuario?.ativo) return null;
   return usuario;
@@ -39,6 +39,7 @@ export const usuarioAtual = cache(async () => {
 export async function exigirUsuario(perfis?: Perfil[]) {
   const usuario = await usuarioAtual();
   if (!usuario) redirect("/login");
+  if (usuario.trocarSenha) redirect("/trocar-senha");
   if (perfis && !perfis.includes(usuario.perfil)) redirect("/");
   return usuario;
 }

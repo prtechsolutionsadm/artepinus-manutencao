@@ -1,54 +1,58 @@
-// Cria o administrador inicial e setores básicos. Pode ser rodado mais de uma vez.
-// Uso: npm run db:seed   (variáveis opcionais: ADMIN_EMAIL, ADMIN_SENHA, ADMIN_NOME, SEED_DEMO=1)
+// Dados iniciais. Seguro para rodar várias vezes (roda a cada deploy na Vercel):
+// só cria o que ainda não existe e nunca altera usuários ou senhas existentes.
+// Uso: npm run db:seed   (SEED_DEMO=1 também cria usuários/requisições de exemplo)
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 
 const db = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? process.env.POSTGRES_URL }),
 });
 
+const SETORES = ["Administrativo", "Produção", "Serraria", "Acabamento", "Expedição", "Manutenção"];
+
+// Administrador inicial. A senha provisória precisa ser trocada no primeiro acesso.
+const ADMIN = { login: "pablo.ribas", nome: "Pablo Ribas", senha: "123456" };
+
 async function main() {
-  const email = (process.env.ADMIN_EMAIL ?? "admin@artepinus.com.br").toLowerCase();
-  const senha = process.env.ADMIN_SENHA ?? "trocar123";
-
-  const setores = ["Administrativo", "Produção", "Serraria", "Acabamento", "Expedição", "Manutenção"];
-  for (const nome of setores) {
-    await db.setor.upsert({ where: { nome }, update: {}, create: { nome } });
+  if ((await db.setor.count()) === 0) {
+    await db.setor.createMany({ data: SETORES.map((nome) => ({ nome })) });
+    console.log("Setores iniciais criados");
   }
-  const manutencao = await db.setor.findUniqueOrThrow({ where: { nome: "Manutenção" } });
 
-  const admin = await db.usuario.upsert({
-    where: { email },
-    update: {},
-    create: {
-      email,
-      nome: process.env.ADMIN_NOME ?? "Administrador",
-      perfil: "ADMIN",
-      senhaHash: await bcrypt.hash(senha, 10),
-      setorId: manutencao.id,
-    },
-  });
-  console.log(`Admin: ${admin.email} (senha inicial: ${process.env.ADMIN_SENHA ? "a definida em ADMIN_SENHA" : senha})`);
+  if (!(await db.usuario.findUnique({ where: { login: ADMIN.login } }))) {
+    await db.usuario.create({
+      data: {
+        login: ADMIN.login,
+        nome: ADMIN.nome,
+        perfil: "ADMIN",
+        senhaHash: await bcrypt.hash(ADMIN.senha, 10),
+        trocarSenha: true,
+        setorId: (await db.setor.findUnique({ where: { nome: "Manutenção" } }))?.id,
+      },
+    });
+    console.log(`Admin criado: ${ADMIN.login} (troca de senha obrigatória no primeiro acesso)`);
+  }
 
-  if (process.env.SEED_DEMO === "1") await demo(admin.id);
+  if (process.env.SEED_DEMO === "1") await demo();
 }
 
-async function demo(adminId: string) {
+async function demo() {
+  const admin = await db.usuario.findUniqueOrThrow({ where: { login: ADMIN.login } });
   const producao = await db.setor.findUniqueOrThrow({ where: { nome: "Produção" } });
   const serraria = await db.setor.findUniqueOrThrow({ where: { nome: "Serraria" } });
   const senhaHash = await bcrypt.hash("teste123", 10);
 
   const tecnico = await db.usuario.upsert({
-    where: { email: "tecnico@artepinus.com.br" },
+    where: { login: "joao.tecnico" },
     update: {},
-    create: { email: "tecnico@artepinus.com.br", nome: "João Técnico", perfil: "MANUTENCAO", senhaHash },
+    create: { login: "joao.tecnico", nome: "João Técnico", perfil: "MANUTENCAO", senhaHash },
   });
   const operador = await db.usuario.upsert({
-    where: { email: "operador@artepinus.com.br" },
+    where: { login: "maria.operadora" },
     update: {},
-    create: { email: "operador@artepinus.com.br", nome: "Maria Operadora", perfil: "SOLICITANTE", senhaHash, setorId: producao.id },
+    create: { login: "maria.operadora", nome: "Maria Operadora", perfil: "SOLICITANTE", senhaHash, setorId: producao.id },
   });
 
   const serra = await db.equipamento.upsert({
@@ -81,17 +85,17 @@ async function demo(adminId: string) {
       tipo: "PREVENTIVA",
       status: "AGENDADA",
       dataAgendada: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-      solicitanteId: adminId,
+      solicitanteId: admin.id,
       responsavelId: tecnico.id,
       historico: {
         create: [
-          { statusNovo: "ABERTA", usuarioId: adminId, observacao: "Requisição aberta" },
+          { statusNovo: "ABERTA", usuarioId: admin.id, observacao: "Requisição aberta" },
           { statusAnterior: "ABERTA", statusNovo: "AGENDADA", usuarioId: tecnico.id },
         ],
       },
     },
   });
-  console.log("Dados de demonstração criados (senha dos usuários demo: teste123)");
+  console.log("Dados de demonstração criados (logins joao.tecnico / maria.operadora, senha teste123)");
 }
 
 main()

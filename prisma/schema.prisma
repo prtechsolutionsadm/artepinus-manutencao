@@ -45,7 +45,8 @@ enum TipoManutencao {
 model Usuario {
   id           String   @id @default(cuid())
   nome         String
-  email        String   @unique
+  login        String   @unique // nome.sobrenome
+  trocarSenha  Boolean  @default(false) // obriga a trocar a senha no próximo acesso
   senhaHash    String
   perfil       Perfil   @default(SOLICITANTE)
   ativo        Boolean  @default(true)
