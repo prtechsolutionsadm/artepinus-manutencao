@@ -29,7 +29,7 @@ import {
   numeroRequisicao,
 } from "@/lib/constantes";
 import { db } from "@/lib/db";
-import { EMPRESA } from "@/lib/empresa";
+import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
 import { exigirUsuario } from "@/lib/session";
 import { PERFIS_RESPONSAVEIS, pode } from "@/lib/permissoes";
 
@@ -176,6 +176,9 @@ export default async function RequisicaoPage({ params }: Params) {
               <p className="mt-1 whitespace-pre-wrap text-sm text-emerald-950">{req.solucao}</p>
             </div>
           )}
+          <p className="mt-5 hidden border-t border-stone-200 pt-2 text-center text-[10px] text-stone-400 print:block">
+            {direitos()} {CREDITO}
+          </p>
         </article>
 
         {(fotosProblema.length > 0 || fotosServico.length > 0 || (envolvido && !encerrada)) && (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { sair, trocarSenha } from "@/app/actions/auth";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
+import { Rodape } from "@/components/Rodape";
 import { usuarioAtual } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Defina sua senha" };
@@ -39,6 +40,7 @@ export default async function TrocarSenhaPage({ searchParams }: { searchParams: 
         <form action={sair} className="mt-4 text-center">
           <button className="text-sm text-stone-500 hover:underline">Sair</button>
         </form>
+        <Rodape className="mt-10" />
       </div>
     </main>
   );

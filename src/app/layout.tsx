@@ -6,6 +6,9 @@ export const metadata: Metadata = {
   title: { default: "Manutenção Artepinus", template: "%s · Manutenção Artepinus" },
   description: "Requisições e histórico de manutenção da Artepinus",
   applicationName: "Manutenção Artepinus",
+  authors: [{ name: "PR Tech Solutions" }],
+  creator: "PR Tech Solutions",
+  publisher: "Artepinus Indústria e Comércio de Madeiras LTDA",
   appleWebApp: { capable: true, title: "Manutenção", statusBarStyle: "default" },
   icons: { apple: "/icons/apple-touch-icon.png" },
 };

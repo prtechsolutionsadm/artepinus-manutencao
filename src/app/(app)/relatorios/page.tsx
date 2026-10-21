@@ -5,7 +5,7 @@ import { BotaoImprimir } from "@/components/BotaoImprimir";
 import { PrioridadeBadge, StatusBadge, Titulo } from "@/components/ui";
 import { PRIORIDADE, STATUS, STATUS_HEX, STATUS_ORDEM, TIPO, formatarData, numeroRequisicao } from "@/lib/constantes";
 import { db } from "@/lib/db";
-import { EMPRESA } from "@/lib/empresa";
+import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
 import { formatarDataCurta, gerarRelatorio, type FiltrosRelatorio } from "@/lib/relatorio";
 import { exigirPermissao } from "@/lib/session";
 import type { StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
@@ -218,7 +218,12 @@ export default async function RelatoriosPage({ searchParams }: { searchParams: P
         </section>
 
         <footer className="border-t border-stone-200 pt-3 text-center text-xs text-stone-400">
-          {EMPRESA.razaoSocial} · CNPJ {EMPRESA.cnpj} · {EMPRESA.sistema} · Gerado em {geradoEm}
+          <p>
+            {EMPRESA.razaoSocial} · CNPJ {EMPRESA.cnpj} · {EMPRESA.sistema} · Gerado em {geradoEm}
+          </p>
+          <p>
+            {direitos()} {CREDITO}
+          </p>
         </footer>
       </article>
     </>

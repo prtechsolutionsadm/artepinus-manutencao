@@ -3,6 +3,7 @@ import { Search } from "lucide-react";
 import { sair } from "@/app/actions/auth";
 import { BarraInferior, MenuLateral } from "@/components/Navegacao";
 import { SincronizadorOffline } from "@/components/SincronizadorOffline";
+import { Rodape } from "@/components/Rodape";
 import { Sininho } from "@/components/Sininho";
 import { PERFIL } from "@/lib/constantes";
 import { db } from "@/lib/db";
@@ -56,6 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">
           <SincronizadorOffline />
           {children}
+          <Rodape className="nao-imprimir mt-12 border-t border-stone-200/70 pt-6" />
         </main>
       </div>
 

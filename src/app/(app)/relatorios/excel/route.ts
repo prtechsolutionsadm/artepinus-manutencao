@@ -3,7 +3,7 @@ import path from "node:path";
 import ExcelJS from "exceljs";
 import { NextRequest, NextResponse } from "next/server";
 import { PRIORIDADE, STATUS, STATUS_HEX, TIPO, numeroRequisicao } from "@/lib/constantes";
-import { EMPRESA } from "@/lib/empresa";
+import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
 import { formatarDataCurta, gerarRelatorio } from "@/lib/relatorio";
 import { usuarioAtual } from "@/lib/session";
 import { pode } from "@/lib/permissoes";
@@ -30,11 +30,14 @@ export async function GET(req: NextRequest) {
 
   const wb = new ExcelJS.Workbook();
   wb.creator = `${EMPRESA.razaoSocial} - ${EMPRESA.sistema}`;
+  wb.company = EMPRESA.razaoSocial;
+  wb.description = `${direitos()} ${CREDITO}`;
   wb.created = new Date();
 
   const ws = wb.addWorksheet("Requisições", {
     views: [{ state: "frozen", ySplit: 6 }],
     pageSetup: { orientation: "landscape", paperSize: 9, fitToPage: true, fitToWidth: 1, fitToHeight: 0 },
+    headerFooter: { oddFooter: `&L&8${direitos()}&R&8${CREDITO} · página &P de &N` },
   });
   ws.columns = [
     { key: "id", width: 10 },
@@ -117,6 +120,9 @@ export async function GET(req: NextRequest) {
     if (r.prioridade === "URGENTE") row.getCell("prioridade").font = { bold: true, color: { argb: "FFDC2626" } };
   });
   ws.autoFilter = { from: { row: 6, column: 1 }, to: { row: 6, column: 14 } };
+  ws.addRow([]);
+  const credito = ws.addRow([`${direitos()} ${CREDITO}`]);
+  credito.font = { size: 9, italic: true, color: { argb: "FF78716C" } };
 
   // Aba de resumo
   const rs = wb.addWorksheet("Resumo");
@@ -148,6 +154,8 @@ export async function GET(req: NextRequest) {
     "Tempo médio para concluir (dias)",
     rel.resumo.diasMedios === null ? "—" : Number(rel.resumo.diasMedios.toFixed(1)),
   ]).font = { bold: true };
+  rs.addRow([]);
+  rs.addRow([`${direitos()} ${CREDITO}`]).font = { size: 9, italic: true, color: { argb: "FF78716C" } };
 
   const buffer = await wb.xlsx.writeBuffer();
   return new NextResponse(buffer as ArrayBuffer, {

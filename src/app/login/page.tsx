@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ClipboardCheck, BellRing, History } from "lucide-react";
 import { entrar } from "@/app/actions/auth";
+import { Rodape } from "@/components/Rodape";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 
 export const metadata: Metadata = { title: "Entrar" };
@@ -29,9 +30,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             </li>
           </ul>
         </div>
-        <div className="text-sm text-marca-100/70">
-          Artepinus Indústria e Comércio de Madeiras · desde 1983
-        </div>
+        <Rodape claro className="text-left" />
         <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-white/5" />
         <div className="pointer-events-none absolute -right-10 top-1/3 h-56 w-56 rounded-full bg-white/5" />
       </section>
@@ -67,6 +66,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
             <BotaoEnviar className="btn-primario w-full py-3">Entrar</BotaoEnviar>
           </ActionForm>
           <p className="mt-8 text-center text-xs text-stone-400">Esqueceu a senha? Fale com o administrador do sistema.</p>
+          <Rodape className="mt-10 lg:hidden" />
         </div>
       </section>
     </main>

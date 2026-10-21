@@ -11,4 +11,12 @@ export const EMPRESA = {
   marca: "/marca.svg",
   /** PNG (transparente) para o Excel, que não aceita SVG. */
   logoPng: "/logo.png",
+  desenvolvedor: "PR Tech Solutions",
 };
+
+/** "© 2026 Artepinus Indústria e Comércio de Madeiras LTDA. Todos os direitos reservados." */
+export function direitos(ano = new Date().getFullYear()) {
+  return `© ${ano} ${EMPRESA.razaoSocial}. Todos os direitos reservados.`;
+}
+
+export const CREDITO = `Desenvolvido por ${EMPRESA.desenvolvedor}`;
