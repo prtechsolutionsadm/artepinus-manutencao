@@ -3,12 +3,11 @@
 // Uso: npm run db:seed   (SEED_DEMO=1 também cria usuários/requisições de exemplo)
 import "dotenv/config";
 import bcrypt from "bcryptjs";
-import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { criarAdaptador } from "../src/lib/adaptador";
 
-const db = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL ?? process.env.POSTGRES_URL }),
-});
+// Mesmo driver da aplicação: no build da Vercel isto também confirma que a conexão funciona
+const db = new PrismaClient({ adapter: criarAdaptador() });
 
 const SETORES = ["Administrativo", "Produção", "Serraria", "Acabamento", "Expedição", "Manutenção"];
 
@@ -16,6 +15,7 @@ const SETORES = ["Administrativo", "Produção", "Serraria", "Acabamento", "Expe
 const ADMIN = { login: "pablo.ribas", nome: "Pablo Ribas", senha: "123456" };
 
 async function main() {
+  console.log(`Banco: conectado via ${new URL(process.env.DATABASE_URL ?? process.env.POSTGRES_URL ?? "postgres://x").hostname.endsWith("prisma.io") ? "Prisma Postgres (serverless)" : "TCP"}, ${await db.usuario.count()} usuário(s)`);
   if ((await db.setor.count()) === 0) {
     await db.setor.createMany({ data: SETORES.map((nome) => ({ nome })) });
     console.log("Setores iniciais criados");
