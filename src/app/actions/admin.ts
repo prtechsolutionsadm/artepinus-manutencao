@@ -6,7 +6,7 @@ import { z } from "zod";
 import { auditar, diferencas } from "@/lib/auditoria";
 import { db } from "@/lib/db";
 import { LOGIN_REGEX } from "@/lib/constantes";
-import { PERFIS_ATRIBUIVEIS, pode } from "@/lib/permissoes";
+import { PERFIS_ATRIBUIVEIS, modulosDe, pode } from "@/lib/permissoes";
 import { exigirPermissao, exigirUsuario } from "@/lib/session";
 import type { EstadoForm } from "./auth";
 
@@ -24,7 +24,8 @@ const usuarioSchema = z.object({
     .trim()
     .toLowerCase()
     .regex(LOGIN_REGEX, "Login deve ser no formato nome.sobrenome (sem acentos ou espaços)"),
-  perfil: z.enum(["ADMIN", "GERENTE", "SUPERVISOR", "MANUTENTOR", "OPERADOR"]),
+  perfil: z.enum(["ADMIN", "GERENTE", "SUPERVISOR", "MANUTENTOR", "OPERADOR", "SEM_ACESSO"]),
+  perfilProducao: z.preprocess(vazioParaNull, z.enum(["SUPERVISOR", "APONTADOR", "CONSULTA"]).nullable()),
   senha: z.preprocess(vazioParaNull, z.string().min(6, "Senha com no mínimo 6 caracteres").nullable()),
   ativo: z.preprocess((v) => v === "on", z.boolean()),
   trocarSenha: z.preprocess((v) => v === "on", z.boolean()),
@@ -37,7 +38,7 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
   const { id, senha, trocarSenha, ...resto } = dados.data;
 
   const existente = id
-    ? await db.usuario.findUnique({ where: { id }, select: { nome: true, login: true, perfil: true, ativo: true } })
+    ? await db.usuario.findUnique({ where: { id }, select: { nome: true, login: true, perfil: true, perfilProducao: true, ativo: true } })
     : null;
   if (id && !existente) return { erro: "Usuário não encontrado" };
 
@@ -50,6 +51,7 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
     return { erro: "Perfil inválido" };
   }
   if (id === eu.id && !resto.ativo) return { erro: "Você não pode desativar o próprio usuário" };
+  if (modulosDe(resto).length === 0) return { erro: "Dê acesso a pelo menos um módulo (Manutenção ou Produção)" };
 
   try {
     if (id && existente) {
@@ -57,7 +59,7 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
         where: { id },
         data: { ...resto, ...(senha ? { senhaHash: await bcrypt.hash(senha, 10), trocarSenha } : {}) },
       });
-      const mudou = diferencas(existente, resto, ["nome", "login", "perfil", "ativo"]);
+      const mudou = diferencas(existente, resto, ["nome", "login", "perfil", "perfilProducao", "ativo"]);
       if (senha) mudou.senha = { de: null, para: "redefinida" };
       if (Object.keys(mudou).length) {
         await auditar({ usuarioId: eu.id, acao: "usuario.editar", entidade: "Usuario", entidadeId: id, resumo: `Editou o usuário ${resto.login}`, detalhes: mudou });

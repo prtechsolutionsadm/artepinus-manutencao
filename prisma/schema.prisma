@@ -16,6 +16,14 @@ enum Perfil {
   SUPERVISOR // coordena a manutenção: atribui, agenda, cancela, relatórios
   MANUTENTOR // executa: atualiza status e registra o serviço
   OPERADOR // abre requisições e acompanha
+  SEM_ACESSO // não usa o módulo de manutenção (só outros módulos)
+}
+
+/// Papel no módulo de Produção (Admin e Gerente têm acesso total sem precisar deste campo).
+enum PerfilProducao {
+  SUPERVISOR // metas, cadastros, edita e exclui qualquer lançamento
+  APONTADOR // lança boletins, paradas, ciclos de estufa, toras e estoque
+  CONSULTA // só vê painéis e relatórios
 }
 
 enum StatusRequisicao {
@@ -45,18 +53,19 @@ enum TipoManutencao {
 }
 
 model Usuario {
-  id           String   @id @default(cuid())
-  nome         String
-  login        String   @unique // nome.sobrenome
-  trocarSenha  Boolean  @default(false) // obriga a trocar a senha no próximo acesso
-  senhaHash    String
-  perfil       Perfil   @default(OPERADOR)
-  ativo        Boolean  @default(true)
-  criadoEm     DateTime @default(now())
-  atualizadoEm DateTime @updatedAt
+  id             String          @id @default(cuid())
+  nome           String
+  login          String          @unique // nome.sobrenome
+  trocarSenha    Boolean         @default(false) // obriga a trocar a senha no próximo acesso
+  senhaHash      String
+  perfil         Perfil          @default(OPERADOR) // papel no módulo de Manutenção
+  perfilProducao PerfilProducao? // papel no módulo de Produção (vazio = sem acesso)
+  ativo          Boolean         @default(true)
+  criadoEm       DateTime        @default(now())
+  atualizadoEm   DateTime        @updatedAt
 
-  requisicoesAbertas    Requisicao[]      @relation("Solicitante")
-  requisicoesAtribuidas Requisicao[]      @relation("Responsavel")
+  requisicoesAbertas    Requisicao[]          @relation("Solicitante")
+  requisicoesAtribuidas Requisicao[]          @relation("Responsavel")
   historicos            HistoricoStatus[]
   comentarios           Comentario[]
   notificacaos          Notificacao[]
@@ -64,9 +73,14 @@ model Usuario {
   anexos                Anexo[]
   apontamentos          Apontamento[]
   itensMarcados         ChecklistItem[]
-  planosResponsavel     PlanoPreventivo[] @relation("PlanosResponsavel")
-  planosCriados         PlanoPreventivo[] @relation("PlanosCriados")
+  planosResponsavel     PlanoPreventivo[]     @relation("PlanosResponsavel")
+  planosCriados         PlanoPreventivo[]     @relation("PlanosCriados")
   auditorias            Auditoria[]
+  boletins              BoletimProducao[]
+  ciclosSecagem         CicloSecagem[]
+  itensCicloMarcados    ItemChecklistCiclo[]
+  cargasToras           CargaToras[]
+  levantamentosEstoque  LevantamentoEstoque[]
 }
 
 model Setor {
@@ -77,18 +91,21 @@ model Setor {
 }
 
 model Equipamento {
-  id          String            @id @default(cuid())
-  codigo      String            @unique // patrimônio / TAG
-  nome        String
-  descricao   String?
-  setorId     String?
-  setor       Setor?            @relation(fields: [setorId], references: [id])
-  ativo       Boolean           @default(true)
-  fabricante  String?
-  modelo      String?
-  numeroSerie String?
-  requisicoes Requisicao[]
-  planos      PlanoPreventivo[]
+  id              String            @id @default(cuid())
+  codigo          String            @unique // patrimônio / TAG
+  nome            String
+  descricao       String?
+  setorId         String?
+  setor           Setor?            @relation(fields: [setorId], references: [id])
+  ativo           Boolean           @default(true)
+  fabricante      String?
+  modelo          String?
+  numeroSerie     String?
+  requisicoes     Requisicao[]
+  planos          PlanoPreventivo[]
+  motivosParada   MotivoParada[]
+  paradasProducao ParadaProducao[]
+  estufa          Estufa?
 }
 
 model Requisicao {
@@ -119,6 +136,8 @@ model Requisicao {
   maquinaParada Boolean   @default(false)
   paradaInicio  DateTime?
   paradaFim     DateTime?
+
+  paradasProducao ParadaProducao[] // paradas da produção que originaram esta requisição
 
   /// Chave gerada no aparelho para requisições abertas sem internet (evita duplicar no reenvio)
   chaveOffline String? @unique
@@ -314,4 +333,234 @@ model Auditoria {
   @@index([criadoEm])
   @@index([entidade, entidadeId])
   @@index([usuarioId, criadoEm])
+}
+
+// ============================ MÓDULO DE PRODUÇÃO ============================
+
+enum CentroParada {
+  MEC // mecânica
+  ELE // elétrica
+  OPE // operacional
+}
+
+/// Catálogo de motivos de parada da linha (códigos da planilha da serraria).
+model MotivoParada {
+  id            String           @id @default(cuid())
+  codigo        Int              @unique
+  descricao     String
+  centro        CentroParada
+  equipamentoId String?
+  equipamento   Equipamento?     @relation(fields: [equipamentoId], references: [id], onDelete: SetNull)
+  ativo         Boolean          @default(true)
+  paradas       ParadaProducao[]
+}
+
+/// Meta do mês (pré-preenche os boletins e serve de referência nos comparativos).
+model MetaProducao {
+  id             String @id @default(cuid())
+  mes            String @unique // "AAAA-MM"
+  metaDiariaM3   Float
+  horasDia       Float
+  rendimentoMeta Float? // m³ produzido ÷ m³ de toras (0–1)
+}
+
+/// Boletim diário da serraria (um turno): preenchido pelo encarregado no fim do dia.
+model BoletimProducao {
+  id               String           @id @default(cuid())
+  data             DateTime         @unique @db.Date
+  responsavelId    String
+  responsavel      Usuario          @relation(fields: [responsavelId], references: [id])
+  metaM3           Float
+  horasProgramadas Float
+  torasQtd         Int?
+  torasM3          Float?
+  diametroMedio    Float? // cm
+  comprimentoMedio Float? // m
+  observacoes      String?
+  criadoEm         DateTime         @default(now())
+  atualizadoEm     DateTime         @updatedAt
+  itens            ItemProducao[]
+  paradas          ParadaProducao[]
+}
+
+enum TipoProduto {
+  BOM
+  APROVEITAMENTO
+  REFUGO
+}
+
+enum Mercado {
+  EXTERNO
+  INTERNO
+}
+
+/// Produção por bitola (espessura × largura × comprimento em mm).
+model ItemProducao {
+  id          String          @id @default(cuid())
+  boletimId   String
+  boletim     BoletimProducao @relation(fields: [boletimId], references: [id], onDelete: Cascade)
+  tipo        TipoProduto
+  mercado     Mercado         @default(EXTERNO)
+  espessura   Int
+  largura     Int
+  comprimento Int
+  pecas       Int
+  m3          Float
+
+  @@index([boletimId])
+}
+
+model ParadaProducao {
+  id            String          @id @default(cuid())
+  boletimId     String
+  boletim       BoletimProducao @relation(fields: [boletimId], references: [id], onDelete: Cascade)
+  motivoId      String?
+  motivo        MotivoParada?   @relation(fields: [motivoId], references: [id], onDelete: SetNull)
+  equipamentoId String?
+  equipamento   Equipamento?    @relation(fields: [equipamentoId], references: [id], onDelete: SetNull)
+  centro        CentroParada
+  ocorrencias   Int             @default(1)
+  minutos       Float
+  descricao     String?
+  requisicaoId  Int?
+  requisicao    Requisicao?     @relation(fields: [requisicaoId], references: [id], onDelete: SetNull)
+
+  @@index([boletimId])
+  @@index([motivoId])
+}
+
+// ---------- Estufas ----------
+
+model Estufa {
+  id            String         @id @default(cuid())
+  numero        Int            @unique
+  nome          String
+  capacidadeM3  Float?
+  equipamentoId String?        @unique // a mesma estufa no módulo de manutenção
+  equipamento   Equipamento?   @relation(fields: [equipamentoId], references: [id], onDelete: SetNull)
+  ativo         Boolean        @default(true)
+  ciclos        CicloSecagem[]
+}
+
+enum StatusCiclo {
+  EM_SECAGEM
+  CONCLUIDO
+  CANCELADO
+}
+
+model CicloSecagem {
+  id             String               @id @default(cuid())
+  estufaId       String
+  estufa         Estufa               @relation(fields: [estufaId], references: [id])
+  numero         Int? // nº do ciclo (controle da estufa)
+  status         StatusCiclo          @default(EM_SECAGEM)
+  entrada        DateTime
+  previsaoSaida  DateTime?
+  saida          DateTime?
+  umidadeInicial Float?
+  umidadeFinal   Float?
+  plantao        String? // responsáveis pelo plantão
+  proximaCarga   String?
+  observacoes    String?
+  responsavelId  String
+  responsavel    Usuario              @relation(fields: [responsavelId], references: [id])
+  criadoEm       DateTime             @default(now())
+  cargas         CargaCiclo[]
+  checklist      ItemChecklistCiclo[]
+
+  @@index([estufaId, entrada])
+  @@index([status])
+}
+
+/// Madeira dentro da estufa: uma linha por bitola/comprimento.
+model CargaCiclo {
+  id          String       @id @default(cuid())
+  cicloId     String
+  ciclo       CicloSecagem @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  espessura   Int // mm
+  largura     String // ex.: "85-100-125" ou "Mista 3, 4 e 5"
+  comprimento Float // m
+  grades      Int
+  m3          Float
+
+  @@index([cicloId])
+}
+
+model ItemChecklistCiclo {
+  id           String       @id @default(cuid())
+  cicloId      String
+  ciclo        CicloSecagem @relation(fields: [cicloId], references: [id], onDelete: Cascade)
+  secao        String?
+  texto        String
+  ordem        Int
+  conforme     Boolean? // null = não conferido
+  observacao   String?
+  marcadoPorId String?
+  marcadoPor   Usuario?     @relation(fields: [marcadoPorId], references: [id])
+  marcadoEm    DateTime?
+
+  @@index([cicloId, ordem])
+}
+
+// ---------- Recebimento de toras ----------
+
+model CargaToras {
+  id               String           @id @default(cuid())
+  data             DateTime
+  origem           String
+  talhao           String?
+  motorista        String?
+  placa            String?
+  comprimentoMedio Float? // m — usado no volume estimado
+  observacoes      String?
+  responsavelId    String
+  responsavel      Usuario          @relation(fields: [responsavelId], references: [id])
+  criadoEm         DateTime         @default(now())
+  itens            ItemCargaToras[]
+
+  @@index([data])
+}
+
+model ItemCargaToras {
+  id         String     @id @default(cuid())
+  cargaId    String
+  carga      CargaToras @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+  diametro   Int // cm
+  quantidade Int
+
+  @@index([cargaId])
+}
+
+// ---------- Estoque de madeira (levantamentos) ----------
+
+enum TipoEstoque {
+  VERDE
+  EMPACOTADA
+}
+
+model LevantamentoEstoque {
+  id            String        @id @default(cuid())
+  data          DateTime
+  tipo          TipoEstoque
+  observacoes   String?
+  responsavelId String
+  responsavel   Usuario       @relation(fields: [responsavelId], references: [id])
+  criadoEm      DateTime      @default(now())
+  itens         ItemEstoque[]
+
+  @@index([tipo, data])
+}
+
+model ItemEstoque {
+  id             String              @id @default(cuid())
+  levantamentoId String
+  levantamento   LevantamentoEstoque @relation(fields: [levantamentoId], references: [id], onDelete: Cascade)
+  espessura      Int // mm
+  largura        String
+  comprimento    Float // m
+  grades         Int?
+  pacotes        Int?
+  m3             Float
+
+  @@index([levantamentoId])
 }

@@ -5,7 +5,7 @@ import { ListaRequisicoes, selectItemRequisicao } from "@/components/ListaRequis
 import { Titulo } from "@/components/ui";
 import { PRIORIDADE, STATUS, STATUS_ORDEM, STATUS_PENDENTES, TIPO } from "@/lib/constantes";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 import type { Prisma } from "@/generated/prisma/client";
 import type { Prioridade, StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
 
@@ -25,7 +25,7 @@ type Filtros = {
 };
 
 export default async function RequisicoesPage({ searchParams }: { searchParams: Promise<Filtros> }) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const f = await searchParams;
   const pagina = Math.max(1, Number(f.pagina) || 1);
 

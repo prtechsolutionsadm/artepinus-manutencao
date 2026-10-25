@@ -3,12 +3,12 @@ import { TriangleAlert } from "lucide-react";
 import { ListaRequisicoes, selectItemRequisicao, type ItemRequisicao } from "@/components/ListaRequisicoes";
 import { Titulo, Vazio } from "@/components/ui";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Agenda" };
 
 export default async function AgendaPage() {
-  await exigirUsuario();
+  await exigirModulo("manutencao");
   const inicioHoje = new Date();
   inicioHoje.setUTCHours(3, 0, 0, 0); // 00:00 em Brasília
   if (inicioHoje > new Date()) inicioHoje.setUTCDate(inicioHoje.getUTCDate() - 1);

@@ -1,6 +1,7 @@
 // Conteúdo do manual do usuário (página /ajuda). Texto simples, organizado por tema.
-// `para` limita a seção a quem tem a permissão; sem `para`, vale para todos.
-import type { Acao } from "@/lib/permissoes";
+// `modulo` mostra a seção só para quem usa o módulo; `para` / `paraProducao` limitam
+// a quem tem a permissão. Sem esses campos, a seção vale para todos.
+import type { Acao, AcaoProducao, Modulo } from "@/lib/permissoes";
 
 export type Bloco =
   | { tipo: "texto"; texto: string }
@@ -11,7 +12,15 @@ export type Bloco =
   | { tipo: "termos"; itens: [string, string][] };
 
 export type Topico = { titulo: string; blocos: Bloco[] };
-export type Secao = { id: string; titulo: string; resumo: string; para?: Acao; topicos: Topico[] };
+export type Secao = {
+  id: string;
+  titulo: string;
+  resumo: string;
+  modulo?: Modulo;
+  para?: Acao;
+  paraProducao?: AcaoProducao;
+  topicos: Topico[];
+};
 
 export const MANUAL: Secao[] = [
   {
@@ -46,8 +55,10 @@ export const MANUAL: Secao[] = [
         titulo: "Navegando pelo sistema",
         blocos: [
           { tipo: "lista", itens: [
+            "O sistema tem dois módulos: Manutenção (requisições) e Produção (boletins da serraria, estufas, toras e estoque). Cada pessoa vê os módulos liberados para ela.",
+            "Quem usa os dois troca de módulo pelos botões Manutenção / Produção no alto do menu (no celular, em Mais).",
             "No computador: o menu fica na lateral esquerda; a busca e o sininho de notificações ficam no topo.",
-            "No celular: use a barra de baixo (Início, Requisições, + Nova, Agenda e Mais). Em Mais estão as demais telas e o botão Sair.",
+            "No celular: use a barra de baixo. Na Manutenção: Início, Requisições, + Nova, Agenda e Mais. Na Produção: Painel, Boletins, + Novo boletim, Estufas e Mais. Em Mais estão as demais telas e o botão Sair.",
             "A busca do topo encontra requisições pelo número (ex.: 25 ou #00025), título ou código do equipamento.",
           ] },
         ],
@@ -56,6 +67,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "abrir-requisicao",
+    modulo: "manutencao",
     titulo: "Abrir uma requisição",
     resumo: "Pedir manutenção com fotos, pelo QR Code ou até sem internet",
     topicos: [
@@ -106,6 +118,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "acompanhar",
+    modulo: "manutencao",
     titulo: "Acompanhar requisições",
     resumo: "Status, histórico, comentários e cancelamento",
     topicos: [
@@ -184,6 +197,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "atender",
+    modulo: "manutencao",
     titulo: "Atender requisições",
     resumo: "Para a equipe de manutenção: status, agenda, horas, checklist e conclusão",
     para: "atenderRequisicoes",
@@ -232,6 +246,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "equipamentos",
+    modulo: "manutencao",
     titulo: "Equipamentos e etiquetas QR",
     resumo: "Cadastro, ficha da máquina e impressão das etiquetas",
     para: "equipamentos",
@@ -262,6 +277,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "preventivas",
+    modulo: "manutencao",
     titulo: "Preventivas e checklists",
     resumo: "Programar manutenções que se repetem e listas de verificação",
     para: "preventivas",
@@ -291,6 +307,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "indicadores",
+    modulo: "manutencao",
     titulo: "Indicadores e relatórios",
     resumo: "Acompanhar resultados e exportar PDF e Excel",
     para: "relatorios",
@@ -334,7 +351,7 @@ export const MANUAL: Secao[] = [
         blocos: [
           { tipo: "passos", itens: [
             "Vá em Usuários e abra Novo usuário.",
-            "Informe nome, login (nome.sobrenome, sem acentos) e perfil.",
+            "Informe nome, login (nome.sobrenome, sem acentos), o perfil na Manutenção e o perfil na Produção.",
             "Defina uma senha inicial (mín. 6 caracteres) e deixe marcado Exigir troca da senha no primeiro acesso.",
             "Toque em Criar usuário e passe o login e a senha para a pessoa.",
           ] },
@@ -344,11 +361,18 @@ export const MANUAL: Secao[] = [
       {
         titulo: "Perfis de acesso",
         blocos: [
+          { tipo: "texto", texto: "Cada usuário tem um perfil por módulo. Quem só trabalha na produção fica com Sem acesso na Manutenção; quem não usa a produção fica com Sem acesso na Produção. Todo usuário precisa de pelo menos um módulo. O Gerente tem acesso total aos dois." },
           { tipo: "termos", itens: [
             ["Gerente", "Acesso a tudo: requisições, cadastros, preventivas, indicadores, relatórios, usuários, setores e auditoria."],
             ["Supervisor", "Coordena a manutenção: atribui, agenda, cancela, cadastra equipamentos, preventivas e checklists, vê indicadores e relatórios."],
             ["Manutentor", "Executa: atualiza status, assume requisições, lança horas, marca checklist, anexa fotos do serviço e cadastra equipamentos."],
             ["Operador", "Abre requisições, comenta, envia fotos e acompanha."],
+          ] },
+          { tipo: "texto", texto: "Na Produção:" },
+          { tipo: "termos", itens: [
+            ["Supervisor", "Lança e corrige qualquer boletim, ciclo, carga ou levantamento, exclui lançamentos e cuida dos cadastros (metas, estufas e motivos de parada)."],
+            ["Apontador", "O encarregado: lança o boletim do turno, ciclos de estufa, cargas de toras e levantamentos de estoque, e corrige o que ele mesmo lançou."],
+            ["Consulta", "Vê painéis, boletins e relatórios, sem lançar nada."],
           ] },
         ],
       },
@@ -359,6 +383,153 @@ export const MANUAL: Secao[] = [
       {
         titulo: "Auditoria",
         blocos: [{ tipo: "texto", texto: "Em Auditoria fica registrado quem fez o quê e quando: entradas no sistema (inclusive tentativas com senha errada), cadastros, mudanças de status, fotos, horas, checklists e planos. Nas alterações aparece o valor anterior e o novo. Filtre por usuário, área, período ou texto." }],
+      },
+    ],
+  },
+  {
+    id: "producao-boletim",
+    titulo: "Boletim da serraria",
+    resumo: "Lançar a produção e as paradas no fim do turno",
+    modulo: "producao",
+    paraProducao: "lancar",
+    topicos: [
+      {
+        titulo: "Lançar o boletim do dia",
+        blocos: [
+          { tipo: "texto", texto: "O encarregado preenche um boletim por dia, no fim do turno. Ele substitui a planilha de controle de produção da serraria." },
+          { tipo: "passos", itens: [
+            "Na Produção, toque em + Novo boletim.",
+            "Confira a data, a meta (m³) e as horas programadas — vêm preenchidas com a meta do mês.",
+            "Em Produção por bitola, toque em Adicionar bitola e informe tipo (Bom, Aproveitamento ou Refugo), mercado, espessura, largura e comprimento em milímetros e o número de peças. O m³ é calculado sozinho.",
+            "Use Repetir para lançar outra quantidade da mesma bitola sem digitar as medidas de novo.",
+            "Em Paradas da linha, toque em Adicionar parada, escolha o motivo (pelo código da planilha), confira o centro e o equipamento e informe quantas vezes parou e os minutos.",
+            "Se as toras consumidas forem conhecidas, abra Toras consumidas no dia e informe a quantidade e o volume — isso calcula o rendimento.",
+            "Confira o Resumo no fim da tela e toque em Lançar boletim.",
+          ] },
+          { tipo: "dica", texto: "Motivo que não está na lista? Deixe — Outro (descrever) — e explique na observação. Peça ao supervisor para cadastrar o motivo se ele se repetir." },
+          { tipo: "atencao", texto: "Existe um boletim por data. Se o dia já foi lançado, abra-o em Boletins e toque em Editar." },
+        ],
+      },
+      {
+        titulo: "Parada mecânica ou elétrica: abrir requisição",
+        blocos: [
+          { tipo: "texto", texto: "No boletim salvo, as paradas mecânicas e elétricas têm o botão Abrir requisição. Ele cria uma requisição corretiva de prioridade alta na Manutenção, já com o equipamento, a data e o tempo parado, e liga a requisição ao boletim." },
+          { tipo: "dica", texto: "O botão aparece para quem também tem acesso ao módulo de Manutenção." },
+        ],
+      },
+    ],
+  },
+  {
+    id: "producao-indicadores",
+    titulo: "Painel e indicadores de produção",
+    resumo: "OEE, disponibilidade, Pareto das paradas e comparativo mensal",
+    modulo: "producao",
+    topicos: [
+      {
+        titulo: "Como os índices são calculados",
+        blocos: [
+          { tipo: "texto", texto: "São as mesmas fórmulas da planilha de controle da serraria. No mês, os índices são calculados sobre os totais (não é a média dos dias)." },
+          { tipo: "termos", itens: [
+            ["Disponibilidade", "(tempo programado − tempo parado) ÷ tempo programado."],
+            ["Produtividade", "produção (m³) ÷ meta (m³)."],
+            ["Qualidade", "1 − refugo ÷ produção."],
+            ["OEE", "Disponibilidade × Produtividade × Qualidade."],
+            ["Rendimento", "produção (m³) ÷ m³ de toras consumidas (quando informado no boletim)."],
+          ] },
+        ],
+      },
+      {
+        titulo: "O que tem no painel",
+        blocos: [
+          { tipo: "lista", itens: [
+            "Escolha o mês no alto; as setas mostram a variação em relação ao mês anterior.",
+            "Produção diária por tipo (bom, aproveitamento e refugo) com a marca da meta de cada dia — toque em Ver tabela para os números.",
+            "Paradas por centro (mecânica, elétrica e operacional), o Pareto dos motivos e as paradas por equipamento.",
+            "Comparativo mensal com produção, meta, refugo, tempo parado e todos os índices.",
+            "Resumo das estufas, das toras recebidas e do último levantamento de estoque.",
+            "O botão Excel baixa o mês completo: comparativo, boletins, produção por bitola, paradas e Pareto.",
+          ] },
+        ],
+      },
+    ],
+  },
+  {
+    id: "producao-estufas",
+    titulo: "Estufas",
+    resumo: "Ciclos de secagem, checklist e aclimatação",
+    modulo: "producao",
+    topicos: [
+      {
+        titulo: "Iniciar um ciclo",
+        blocos: [
+          { tipo: "passos", itens: [
+            "Em Estufas, toque em Iniciar ciclo na estufa livre.",
+            "Informe o nº do ciclo, a entrada, a previsão de saída, a umidade inicial e o plantão.",
+            "Em Madeira na estufa, lance cada bitola: espessura, largura (ex.: 85-100-125), comprimento em metros, grades e volume em m³.",
+            "Toque em Iniciar ciclo. O checklist da estufa é criado junto.",
+          ] },
+          { tipo: "texto", texto: "O painel das estufas mostra há quanto tempo cada uma está secando, o volume, a previsão de saída (fica vermelho se passar) e o andamento do checklist." },
+        ],
+      },
+      {
+        titulo: "Checklist e conclusão",
+        blocos: [
+          { tipo: "lista", itens: [
+            "No ciclo, marque cada item do checklist como OK (✓) ou Não conforme (✗). Para item não conforme, escreva a observação.",
+            "Ao tirar a madeira, preencha a saída e a umidade final em Concluir ciclo.",
+            "O sistema mostra quando a madeira fica liberada: 24 h no pátio e mais 24 h na fábrica (medir os pacotes de novo).",
+          ] },
+        ],
+      },
+    ],
+  },
+  {
+    id: "producao-toras-estoque",
+    titulo: "Toras e estoque de madeira",
+    resumo: "Recebimento de cargas por diâmetro e levantamentos de estoque",
+    modulo: "producao",
+    topicos: [
+      {
+        titulo: "Registrar uma carga de toras",
+        blocos: [
+          { tipo: "passos", itens: [
+            "Em Recebimento de toras, toque em Nova carga.",
+            "Informe data, origem/fornecedor, talhão, motorista, placa e o comprimento médio das toras.",
+            "Lance a quantidade de toras por diâmetro (cm). Adicionar diâmetro já sugere o próximo diâmetro.",
+            "Toque em Registrar carga.",
+          ] },
+          { tipo: "texto", texto: "O volume mostrado é uma estimativa (cilindro pelo diâmetro e comprimento médio), útil para comparar cargas e meses." },
+        ],
+      },
+      {
+        titulo: "Levantamento de estoque",
+        blocos: [
+          { tipo: "passos", itens: [
+            "Em Estoque de madeira, toque em Novo levantamento.",
+            "Escolha o estoque: madeira verde (pátio) ou seca empacotada.",
+            "Lance cada bitola com grades ou pacotes e o volume em m³.",
+            "Para o próximo levantamento, abra o anterior e use Novo a partir deste: só ajuste o que mudou.",
+          ] },
+        ],
+      },
+    ],
+  },
+  {
+    id: "producao-cadastros",
+    titulo: "Cadastros da produção",
+    resumo: "Metas do mês, estufas e motivos de parada",
+    modulo: "producao",
+    paraProducao: "gerir",
+    topicos: [
+      {
+        titulo: "Metas, estufas e motivos",
+        blocos: [
+          { tipo: "lista", itens: [
+            "Meta de produção: defina a meta diária (m³), as horas por dia e o rendimento esperado de cada mês. Os boletins do mês já vêm com esses valores.",
+            "Estufas: número, nome, capacidade e o equipamento correspondente na Manutenção.",
+            "Motivos de parada: código, descrição, centro (mecânica, elétrica, operacional) e equipamento. Desative em vez de excluir, para manter o histórico.",
+          ] },
+        ],
       },
     ],
   },

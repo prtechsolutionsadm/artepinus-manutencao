@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ClipboardCheck, BellRing, History } from "lucide-react";
+import { ClipboardCheck, Factory, Gauge } from "lucide-react";
 import { entrar } from "@/app/actions/auth";
 import { Rodape } from "@/components/Rodape";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
@@ -14,19 +14,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <div>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/logo-branco.svg" alt="Artepinus" className="h-24 w-auto" />
-          <div className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-marca-100">Sistema de Manutenção</div>
+          <div className="mt-2 text-sm font-medium uppercase tracking-[0.2em] text-marca-100">Manutenção · Produção</div>
         </div>
         <div className="max-w-md space-y-8">
-          <h2 className="text-4xl font-bold leading-tight">Requisições de manutenção sem papel.</h2>
+          <h2 className="text-4xl font-bold leading-tight">Manutenção e produção sem papel.</h2>
           <ul className="space-y-4 text-marca-100">
             <li className="flex gap-3">
-              <ClipboardCheck className="h-5 w-5 shrink-0 text-white" /> Abra e acompanhe requisições de qualquer aparelho.
+              <ClipboardCheck className="h-5 w-5 shrink-0 text-white" /> Abra e acompanhe requisições de manutenção de qualquer aparelho.
             </li>
             <li className="flex gap-3">
-              <BellRing className="h-5 w-5 shrink-0 text-white" /> Receba avisos a cada mudança de status.
+              <Factory className="h-5 w-5 shrink-0 text-white" /> Lance a produção e as paradas da serraria no fim do turno.
             </li>
             <li className="flex gap-3">
-              <History className="h-5 w-5 shrink-0 text-white" /> Histórico completo de cada equipamento.
+              <Gauge className="h-5 w-5 shrink-0 text-white" /> Indicadores, OEE e histórico de cada equipamento.
             </li>
           </ul>
         </div>

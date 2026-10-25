@@ -5,7 +5,7 @@ import { ListaRequisicoes, selectItemRequisicao } from "@/components/ListaRequis
 import { Titulo } from "@/components/ui";
 import { STATUS, STATUS_HEX, STATUS_PENDENTES } from "@/lib/constantes";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 import { pode } from "@/lib/permissoes";
 
 function saudacao() {
@@ -14,7 +14,7 @@ function saudacao() {
 }
 
 export default async function InicioPage() {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const equipe = pode(eu.perfil, "atenderRequisicoes");
   const agora = new Date();
   const em7dias = new Date(agora.getTime() + 7 * 24 * 60 * 60 * 1000);

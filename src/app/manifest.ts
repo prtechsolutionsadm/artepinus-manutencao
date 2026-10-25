@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Manutenção Artepinus",
-    short_name: "Manutenção",
-    description: "Requisições e histórico de manutenção da Artepinus",
+    name: "Artepinus · Manutenção e Produção",
+    short_name: "Artepinus",
+    description: "Manutenção e produção da Artepinus: requisições, boletins da serraria, estufas e indicadores",
     lang: "pt-BR",
     start_url: "/",
     display: "standalone",
@@ -15,6 +15,9 @@ export default function manifest(): MetadataRoute.Manifest {
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
       { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
-    shortcuts: [{ name: "Nova requisição", url: "/requisicoes/nova" }],
+    shortcuts: [
+      { name: "Nova requisição", url: "/requisicoes/nova" },
+      { name: "Novo boletim", url: "/producao/boletins/novo" },
+    ],
   };
 }

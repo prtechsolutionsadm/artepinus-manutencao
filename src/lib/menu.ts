@@ -1,5 +1,4 @@
-import type { Perfil } from "@/generated/prisma/enums";
-import { pode } from "@/lib/permissoes";
+import { modulosDe, pode, podeProducao, type Modulo, type UsuarioComPerfis } from "@/lib/permissoes";
 
 export type IconeMenu =
   | "inicio"
@@ -16,14 +15,30 @@ export type IconeMenu =
   | "auditoria"
   | "perfil"
   | "notificacoes"
-  | "ajuda";
+  | "ajuda"
+  | "painel"
+  | "boletins"
+  | "estufas"
+  | "toras"
+  | "estoque"
+  | "cadastrosProducao";
 
 export type ItemNav = { href: string; label: string; icone: IconeMenu };
 export type GrupoNav = { titulo: string; itens: ItemNav[] };
 
-export function gruposMenu(perfil: Perfil): GrupoNav[] {
+const CONTA: GrupoNav = {
+  titulo: "Conta",
+  itens: [
+    { href: "/notificacoes", label: "Notificações", icone: "notificacoes" },
+    { href: "/perfil", label: "Meu perfil", icone: "perfil" },
+    { href: "/ajuda", label: "Manual do usuário", icone: "ajuda" },
+  ],
+};
+
+function menuManutencao(u: UsuarioComPerfis): GrupoNav[] {
+  const perfil = u.perfil;
   const se = (cond: boolean, item: ItemNav) => (cond ? [item] : []);
-  const grupos: GrupoNav[] = [
+  return [
     {
       titulo: "Manutenção",
       itens: [
@@ -50,21 +65,63 @@ export function gruposMenu(perfil: Perfil): GrupoNav[] {
         ...se(pode(perfil, "setores"), { href: "/setores", label: "Setores", icone: "setores" }),
       ],
     },
+    CONTA,
+  ];
+}
+
+function menuProducao(u: UsuarioComPerfis): GrupoNav[] {
+  const se = (cond: boolean, item: ItemNav) => (cond ? [item] : []);
+  return [
     {
-      titulo: "Conta",
+      titulo: "Produção",
       itens: [
-        { href: "/notificacoes", label: "Notificações", icone: "notificacoes" },
-        { href: "/perfil", label: "Meu perfil", icone: "perfil" },
-        { href: "/ajuda", label: "Manual do usuário", icone: "ajuda" },
+        { href: "/producao", label: "Painel", icone: "painel" },
+        { href: "/producao/boletins", label: "Boletins da serraria", icone: "boletins" },
+        { href: "/producao/estufas", label: "Estufas", icone: "estufas" },
+        { href: "/producao/toras", label: "Recebimento de toras", icone: "toras" },
+        { href: "/producao/estoque", label: "Estoque de madeira", icone: "estoque" },
       ],
     },
+    {
+      titulo: "Cadastros",
+      itens: [
+        ...se(podeProducao(u, "gerir"), { href: "/producao/cadastros", label: "Motivos, estufas e metas", icone: "cadastrosProducao" }),
+        ...se(pode(u.perfil, "usuarios"), { href: "/usuarios", label: "Usuários", icone: "usuarios" }),
+        ...se(pode(u.perfil, "auditoria"), { href: "/auditoria", label: "Auditoria", icone: "auditoria" }),
+      ],
+    },
+    CONTA,
   ];
-  return grupos.filter((g) => g.itens.length > 0);
+}
+
+/** Menus de cada módulo a que o usuário tem acesso. */
+export function menusDoUsuario(u: UsuarioComPerfis): Partial<Record<Modulo, GrupoNav[]>> {
+  const menus: Partial<Record<Modulo, GrupoNav[]>> = {};
+  for (const m of modulosDe(u)) {
+    menus[m] = (m === "manutencao" ? menuManutencao(u) : menuProducao(u)).filter((g) => g.itens.length > 0);
+  }
+  return menus;
+}
+
+export const COOKIE_MODULO = "modulo";
+
+/** Lê o módulo salvo no cookie (último módulo visitado). */
+export function moduloSalvo(valor: string | undefined): Modulo | null {
+  return valor === "manutencao" || valor === "producao" ? valor : null;
+}
+
+/** Módulo da página atual; null nas páginas comuns (perfil, notificações, manual, usuários…). */
+export function moduloDaRota(path: string): Modulo | null {
+  if (path === "/producao" || path.startsWith("/producao/")) return "producao";
+  const comuns = ["/notificacoes", "/perfil", "/ajuda", "/menu", "/usuarios", "/auditoria"];
+  if (comuns.some((c) => path === c || path.startsWith(c + "/"))) return null;
+  return "manutencao";
 }
 
 /** Item ativo: "/" só na raiz; os demais pelo prefixo, sem confundir /requisicoes com /requisicoes/nova. */
 export function itemAtivo(path: string, href: string) {
-  if (href === "/") return path === "/";
+  if (href === "/" || href === "/producao") return path === href;
+  if (href === "/producao/boletins" && path.startsWith("/producao/boletins/novo")) return false;
   if (href === "/requisicoes" && path.startsWith("/requisicoes/nova")) return false;
   return path === href || path.startsWith(href + "/");
 }

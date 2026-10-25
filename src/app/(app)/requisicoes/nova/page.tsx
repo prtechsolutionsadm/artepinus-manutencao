@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { FormNovaRequisicao } from "@/components/FormNovaRequisicao";
 import { Titulo } from "@/components/ui";
 import { db } from "@/lib/db";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Nova requisição" };
 
 export default async function NovaRequisicaoPage({ searchParams }: { searchParams: Promise<{ equipamento?: string }> }) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const { equipamento } = await searchParams;
   const [setores, equipamentos] = await Promise.all([
     db.setor.findMany({ orderBy: { nome: "asc" }, select: { id: true, nome: true } }),

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { auditar, diferencas } from "@/lib/auditoria";
 import { fotosDoForm, processarFoto } from "@/lib/fotos";
 import { criarRequisicaoCompleta, novaRequisicaoSchema } from "@/lib/requisicoes";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 import { PERFIS_RESPONSAVEIS, pode } from "@/lib/permissoes";
 import { PRIORIDADE, STATUS, STATUS_FINAIS, dataLocalParaDate, formatarData, formatarDuracao, numeroRequisicao } from "@/lib/constantes";
 import { idsPorPerfil, notificar } from "@/lib/notificacoes";
@@ -19,7 +19,7 @@ export type ResultadoNova = { erro?: string; id?: number };
 
 /** Chamada pelo formulário de nova requisição (que também cuida da fila sem internet). */
 export async function criarRequisicao(form: FormData): Promise<ResultadoNova> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const dados = novaRequisicaoSchema.safeParse(Object.fromEntries([...form.entries()].filter(([k]) => k !== "fotos")));
   if (!dados.success) return { erro: dados.error.issues[0].message };
 
@@ -47,7 +47,7 @@ const statusSchema = z.object({
 
 /** Atualiza status / agendamento / responsável. Gerente, supervisor e manutentor (e admin). */
 export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   if (!pode(eu.perfil, "atenderRequisicoes")) return { erro: "Sem permissão" };
 
   const dados = statusSchema.safeParse(Object.fromEntries(form));
@@ -177,7 +177,7 @@ export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<Es
 
 /** O solicitante pode cancelar a própria requisição enquanto ainda não foi tratada. */
 export async function cancelarPropria(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const id = Number(form.get("id"));
   const motivo = String(form.get("motivo") ?? "").trim();
   if (!motivo) return { erro: "Informe o motivo do cancelamento" };
@@ -208,7 +208,7 @@ export async function cancelarPropria(_: EstadoForm, form: FormData): Promise<Es
 }
 
 export async function comentar(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const id = Number(form.get("id"));
   const texto = String(form.get("texto") ?? "").trim();
   if (!texto) return { erro: "Escreva um comentário" };
@@ -250,7 +250,7 @@ async function podeAnexar(eu: { id: string; perfil: Parameters<typeof pode>[0] }
 }
 
 export async function enviarFotos(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const id = Number(form.get("id"));
   const tipo = form.get("tipo") === "SERVICO" && pode(eu.perfil, "atenderRequisicoes") ? "SERVICO" : "PROBLEMA";
   if (!(await podeAnexar(eu, id))) return { erro: "Sem permissão" };
@@ -277,7 +277,7 @@ export async function enviarFotos(_: EstadoForm, form: FormData): Promise<Estado
 }
 
 export async function removerFoto(anexoId: string) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const anexo = await db.anexo.findUnique({ where: { id: anexoId }, select: { requisicaoId: true, autorId: true } });
   if (!anexo) return;
   if (anexo.autorId !== eu.id && !pode(eu.perfil, "cancelarRequisicoes")) throw new Error("Sem permissão");
@@ -297,7 +297,7 @@ const horasSchema = z.object({
 
 /** Registra horas trabalhadas. Supervisor/gerente podem lançar em nome de outro manutentor. */
 export async function registrarHoras(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   if (!pode(eu.perfil, "apontarHoras")) return { erro: "Sem permissão" };
   const dados = horasSchema.safeParse(Object.fromEntries(form));
   if (!dados.success) return { erro: dados.error.issues[0].message };
@@ -332,7 +332,7 @@ export async function registrarHoras(_: EstadoForm, form: FormData): Promise<Est
 }
 
 export async function removerHoras(apontamentoId: string) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const ap = await db.apontamento.findUnique({ where: { id: apontamentoId } });
   if (!ap) return;
   if (ap.usuarioId !== eu.id && !pode(eu.perfil, "atribuirResponsavel")) throw new Error("Sem permissão");
@@ -342,7 +342,7 @@ export async function removerHoras(apontamentoId: string) {
 }
 
 export async function aplicarChecklist(_: EstadoForm, form: FormData): Promise<EstadoForm> {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   if (!pode(eu.perfil, "apontarHoras")) return { erro: "Sem permissão" };
   const id = Number(form.get("id"));
   const modeloId = String(form.get("modeloId") ?? "");
@@ -357,7 +357,7 @@ export async function aplicarChecklist(_: EstadoForm, form: FormData): Promise<E
 }
 
 export async function marcarItemChecklist(itemId: string, feito: boolean) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   if (!pode(eu.perfil, "apontarHoras")) throw new Error("Sem permissão");
   const item = await db.checklistItem.update({
     where: { id: itemId },

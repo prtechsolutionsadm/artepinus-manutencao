@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import { ManualUsuario } from "@/components/ManualUsuario";
 import { Titulo } from "@/components/ui";
-import { PERFIL } from "@/lib/constantes";
+import { PERFIL, PERFIL_PRODUCAO } from "@/lib/constantes";
 import { EMPRESA } from "@/lib/empresa";
 import { MANUAL } from "@/lib/manual";
-import { pode } from "@/lib/permissoes";
+import { pode, podeProducao, temModulo } from "@/lib/permissoes";
 import { exigirUsuario } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Manual do usuário" };
@@ -12,7 +12,13 @@ export const metadata: Metadata = { title: "Manual do usuário" };
 /** Manual do usuário: mostra só as seções que fazem sentido para o perfil de quem está logado. */
 export default async function AjudaPage() {
   const eu = await exigirUsuario();
-  const secoes = MANUAL.filter((s) => !s.para || pode(eu.perfil, s.para));
+  const secoes = MANUAL.filter(
+    (s) => (!s.modulo || temModulo(eu, s.modulo)) && (!s.para || pode(eu.perfil, s.para)) && (!s.paraProducao || podeProducao(eu, s.paraProducao)),
+  );
+  const perfis = [
+    temModulo(eu, "manutencao") ? `Manutenção: ${PERFIL[eu.perfil]}` : null,
+    temModulo(eu, "producao") ? `Produção: ${eu.perfil === "ADMIN" || eu.perfil === "GERENTE" ? "acesso total" : PERFIL_PRODUCAO[eu.perfilProducao!]}` : null,
+  ].filter(Boolean);
 
   return (
     <>
@@ -24,7 +30,7 @@ export default async function AjudaPage() {
           <div className="text-lg font-bold">Manual do usuário · {EMPRESA.sistema}</div>
         </div>
       </div>
-      <Titulo subtitulo={`Como usar o sistema de manutenção · conteúdo para o perfil ${PERFIL[eu.perfil]}`}>Manual do usuário</Titulo>
+      <Titulo subtitulo={`Como usar o sistema · conteúdo para o seu acesso (${perfis.join(" · ")})`}>Manual do usuário</Titulo>
       <ManualUsuario secoes={secoes} />
     </>
   );

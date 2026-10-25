@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { SESSION_COOKIE, assinarSessao, lerSessao, type Sessao } from "@/lib/jwt";
 import type { Perfil } from "@/generated/prisma/enums";
-import { pode, type Acao } from "@/lib/permissoes";
+import { MODULOS, modulosDe, pode, podeProducao, temModulo, type Acao, type AcaoProducao, type Modulo } from "@/lib/permissoes";
 
 const DURACAO_DIAS = 30;
 
@@ -31,7 +31,7 @@ export const usuarioAtual = cache(async () => {
   if (!sessao) return null;
   const usuario = await db.usuario.findUnique({
     where: { id: sessao.userId },
-    select: { id: true, nome: true, login: true, perfil: true, ativo: true, trocarSenha: true },
+    select: { id: true, nome: true, login: true, perfil: true, perfilProducao: true, ativo: true, trocarSenha: true },
   });
   if (!usuario?.ativo) return null;
   return usuario;
@@ -47,9 +47,29 @@ export async function exigirUsuario(perfis?: Perfil[]) {
 
 export type UsuarioAtual = NonNullable<Awaited<ReturnType<typeof usuarioAtual>>>;
 
-/** Usuário logado com permissão para a ação; senão volta para o início. */
-export async function exigirPermissao(acao: Acao) {
+/** Página inicial do usuário: o primeiro módulo a que ele tem acesso. */
+export function inicioDe(u: UsuarioAtual) {
+  const [primeiro] = modulosDe(u);
+  return primeiro ? MODULOS[primeiro].inicio : "/perfil";
+}
+
+/** Usuário logado com acesso ao módulo; senão vai para um módulo que ele usa. */
+export async function exigirModulo(modulo: Modulo) {
   const usuario = await exigirUsuario();
-  if (!pode(usuario.perfil, acao)) redirect("/");
+  if (!temModulo(usuario, modulo)) redirect(inicioDe(usuario));
+  return usuario;
+}
+
+/** Usuário logado com permissão para a ação de manutenção; senão volta para o início. */
+export async function exigirPermissao(acao: Acao) {
+  const usuario = await exigirModulo("manutencao");
+  if (!pode(usuario.perfil, acao)) redirect(inicioDe(usuario));
+  return usuario;
+}
+
+/** Usuário logado com permissão para a ação no módulo de produção. */
+export async function exigirProducao(acao: AcaoProducao = "ver") {
+  const usuario = await exigirUsuario();
+  if (!podeProducao(usuario, acao)) redirect(temModulo(usuario, "producao") ? "/producao" : inicioDe(usuario));
   return usuario;
 }

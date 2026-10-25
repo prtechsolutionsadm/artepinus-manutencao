@@ -1,5 +1,11 @@
 import {
   BarChart3,
+  Boxes,
+  ClipboardPen,
+  Flame,
+  LayoutDashboard,
+  Settings2,
+  TreePine,
   Bell,
   Building2,
   CalendarClock,
@@ -34,4 +40,10 @@ export const ICONES: Record<IconeMenu, LucideIcon> = {
   perfil: UserRound,
   notificacoes: Bell,
   ajuda: CircleHelp,
+  painel: LayoutDashboard,
+  boletins: ClipboardPen,
+  estufas: Flame,
+  toras: TreePine,
+  estoque: Boxes,
+  cadastrosProducao: Settings2,
 };

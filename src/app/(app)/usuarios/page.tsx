@@ -3,15 +3,15 @@ import { Pencil, Plus } from "lucide-react";
 import { salvarUsuario } from "@/app/actions/admin";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 import { Badge, Titulo } from "@/components/ui";
-import { PERFIL } from "@/lib/constantes";
+import { PERFIL, PERFIL_PRODUCAO } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { exigirPermissao } from "@/lib/session";
 import { PERFIS_ATRIBUIVEIS } from "@/lib/permissoes";
-import type { Perfil } from "@/generated/prisma/enums";
+import type { Perfil, PerfilProducao } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Usuários" };
 
-type Usr = { id: string; nome: string; login: string; perfil: Perfil; ativo: boolean };
+type Usr = { id: string; nome: string; login: string; perfil: Perfil; perfilProducao: PerfilProducao | null; ativo: boolean };
 
 function CamposUsuario({ u }: { u?: Usr }) {
   return (
@@ -35,7 +35,7 @@ function CamposUsuario({ u }: { u?: Usr }) {
           />
         </div>
         <div>
-          <label>Perfil</label>
+          <label>Perfil na Manutenção</label>
           <select name="perfil" defaultValue={u?.perfil ?? "OPERADOR"} className="campo">
             {(u?.perfil === "ADMIN" ? (["ADMIN"] as const) : PERFIS_ATRIBUIVEIS).map((k) => (
               <option key={k} value={k}>
@@ -43,6 +43,22 @@ function CamposUsuario({ u }: { u?: Usr }) {
               </option>
             ))}
           </select>
+        </div>
+        <div>
+          <label>Perfil na Produção</label>
+          {u?.perfil === "ADMIN" || u?.perfil === "GERENTE" ? (
+            <p className="campo flex items-center bg-stone-50 text-stone-500">Acesso total (Admin/Gerente)</p>
+          ) : (
+            <select name="perfilProducao" defaultValue={u?.perfilProducao ?? ""} className="campo">
+              <option value="">Sem acesso</option>
+              {(Object.keys(PERFIL_PRODUCAO) as PerfilProducao[]).map((k) => (
+                <option key={k} value={k}>
+                  {PERFIL_PRODUCAO[k]}
+                </option>
+              ))}
+            </select>
+          )}
+          <p className="mt-1 text-xs text-stone-500">Supervisor: tudo, inclusive cadastros · Apontador: lança dados · Consulta: só vê. Gerente tem acesso total.</p>
         </div>
         <div>
           <label>{u ? "Nova senha (deixe em branco para manter)" : "Senha inicial *"}</label>
@@ -71,7 +87,7 @@ export default async function UsuariosPage() {
   const usuarios = await db.usuario.findMany({
     where: eu.perfil === "ADMIN" ? {} : { perfil: { not: "ADMIN" } },
     orderBy: [{ ativo: "desc" }, { nome: "asc" }],
-    select: { id: true, nome: true, login: true, perfil: true, ativo: true },
+    select: { id: true, nome: true, login: true, perfil: true, perfilProducao: true, ativo: true },
   });
 
   return (
@@ -90,7 +106,10 @@ export default async function UsuariosPage() {
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2">
                 <span className="font-medium">{u.nome}</span>
                 <span className="font-mono text-sm text-stone-500">{u.login}</span>
-                <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">{PERFIL[u.perfil]}</Badge>
+                {u.perfil !== "SEM_ACESSO" && <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">Manutenção · {PERFIL[u.perfil]}</Badge>}
+                {u.perfilProducao && u.perfil !== "ADMIN" && u.perfil !== "GERENTE" && (
+                  <Badge cor="bg-amber-50 text-amber-800 ring-amber-100">Produção · {PERFIL_PRODUCAO[u.perfilProducao]}</Badge>
+                )}
                 {!u.ativo && <Badge cor="bg-stone-200 text-stone-700 ring-stone-300">Inativo</Badge>}
                 <Pencil className="ml-auto h-4 w-4 text-stone-400" />
               </summary>

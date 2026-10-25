@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Titulo, Vazio } from "@/components/ui";
-import { PERFIL, STATUS, formatarData } from "@/lib/constantes";
+import { PERFIL, PERFIL_PRODUCAO, STATUS, formatarData } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { exigirPermissao } from "@/lib/session";
 import type { Prisma } from "@/generated/prisma/client";
@@ -50,6 +50,7 @@ function valorLegivel(campo: string, v: unknown, nomes: Map<string, string>) {
   if (typeof v === "boolean") return v ? "Sim" : "Não";
   if (campo === "status" && typeof v === "string" && v in STATUS) return STATUS[v as keyof typeof STATUS].label;
   if (campo === "perfil" && typeof v === "string" && v in PERFIL) return PERFIL[v as keyof typeof PERFIL];
+  if (campo === "perfilProducao") return typeof v === "string" && v in PERFIL_PRODUCAO ? PERFIL_PRODUCAO[v as keyof typeof PERFIL_PRODUCAO] : "Sem acesso";
   if ((campo === "responsavelId" || campo === "setorId") && typeof v === "string") return nomes.get(v) ?? v;
   if (typeof v === "string" && /^\d{4}-\d{2}-\d{2}T/.test(v)) return formatarData(new Date(v), true);
   return String(v);

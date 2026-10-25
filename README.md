@@ -1,11 +1,47 @@
-# Manutenção Artepinus
+# Artepinus · Manutenção e Produção
 
-Sistema web (PWA) para abrir, acompanhar e manter o histórico das requisições de
-manutenção da Artepinus — substituindo as requisições em papel.
+Sistema web (PWA) da Artepinus em módulos, substituindo o papel e as planilhas:
+
+- **Manutenção** — abrir, acompanhar e manter o histórico das requisições de manutenção.
+- **Produção** — boletim diário da serraria (produção e paradas), estufas, recebimento de toras,
+  estoque de madeira e indicadores (OEE) com comparativos mensais.
 
 **Stack:** Next.js 16 (Node.js) · Prisma ORM 7 · Prisma Postgres · Tailwind CSS 4 · hospedagem na Vercel.
 
-## Funcionalidades
+## Módulos e acesso
+
+Cada usuário tem um perfil por módulo (`perfil` na Manutenção, `perfilProducao` na Produção;
+regras em `src/lib/permissoes.ts`: `temModulo`, `pode`, `podeProducao`). Quem só usa a produção fica
+com *Sem acesso* na Manutenção. Admin e Gerente têm acesso total aos dois. Quem usa os dois troca de
+módulo no topo do menu.
+
+| Produção | Supervisor | Apontador | Consulta |
+|---|:-:|:-:|:-:|
+| Painel, boletins, estufas, toras, estoque e Excel | ✓ | ✓ | ✓ |
+| Lançar boletim, ciclo de estufa, carga de toras e levantamento | ✓ | ✓ | |
+| Corrigir lançamentos de outra pessoa e excluir | ✓ | | |
+| Cadastros: metas do mês, estufas e motivos de parada | ✓ | | |
+
+## Produção
+
+- **Boletim da serraria** (um por dia, no fim do turno): produção por bitola (E × L × C em mm, peças →
+  m³ calculado) separada em bom / aproveitamento / refugo e mercado; paradas com o motivo pelo código da
+  planilha (53 motivos importados de `prisma/dados/serraria.json`), centro MEC/ELE/OPE, equipamento,
+  ocorrências e minutos; toras consumidas (para o rendimento). Parada mecânica/elétrica vira requisição
+  de manutenção com um toque.
+- **Indicadores** (mesmas fórmulas da planilha, sobre os totais do período): Disponibilidade =
+  (tempo programado − paradas) ÷ tempo programado · Produtividade = produção ÷ meta · Qualidade =
+  1 − refugo ÷ produção · **OEE** = D × P × Q · Rendimento = produção ÷ m³ de toras. Painel com
+  produção diária × meta, paradas por centro, Pareto, paradas por equipamento e comparativo mensal;
+  exportação em **Excel** (comparativo, boletins, bitolas, paradas e Pareto).
+- **Estufas**: ciclos de secagem (madeira por bitola, entrada/previsão/saída, umidade), checklist da
+  planilha da estufa (OK / não conforme com observação) e aviso de aclimatação de 48 h.
+- **Toras**: cargas recebidas por diâmetro, com volume estimado. **Estoque**: levantamentos da madeira
+  verde e da seca empacotada (partindo do anterior).
+- **Cadastros**: meta do mês (pré-preenche o boletim), estufas e motivos de parada. O seed cria os
+  21 equipamentos da linha da serraria, os motivos e as 6 estufas (só o que faltar).
+
+## Manutenção
 
 - **Login** no formato `nome.sobrenome` + senha — o solicitante fica registrado automaticamente na requisição.
   Senha provisória definida pelo admin precisa ser trocada no primeiro acesso.
@@ -22,6 +58,7 @@ manutenção da Artepinus — substituindo as requisições em papel.
   | Indicadores e relatórios | ✓ | ✓ | ✓ | | |
   | Usuários, setores e auditoria | ✓ | ✓ | | | |
 
+  *Sem acesso*: a pessoa não usa o módulo de manutenção (só a produção).
   *Administrador* é exclusivo do desenvolvedor: não pode ser atribuído pela tela, e o gerente não vê nem edita essa conta.
 - **Status:** Aberta · Em análise · Planejada · Agendada · Em andamento · Aguardando peças · Adiada · Concluída · Cancelada.
   - Agendada exige data; Adiada e Cancelada exigem motivo; Concluída exige descrição do serviço.
@@ -73,7 +110,8 @@ npm run dev                 # http://localhost:3000
 
 Login inicial: `pablo.ribas` / `123456` (o sistema pede a troca da senha no primeiro acesso).
 
-Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `ana.gerente`, `paulo.supervisor`, `joao.tecnico` e `maria.operadora`, senha `teste123`).
+Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `ana.gerente`, `paulo.supervisor`, `joao.tecnico`, `maria.operadora` e
+`carlos.encarregado` — só produção, apontador —, senha `teste123`, além de um mês e meio de boletins, um ciclo de estufa, cargas e estoque).
 
 ## Deploy (Prisma Postgres + Vercel)
 
@@ -99,8 +137,11 @@ Para dados de exemplo: `SEED_DEMO=1 npm run db:seed` (cria `ana.gerente`, `paulo
 ## Estrutura
 
 ```
-prisma/schema.prisma        modelos: Usuario, Setor, Equipamento, Requisicao, HistoricoStatus, Comentario
-prisma/seed.ts              admin inicial + setores (+ demo)
+prisma/schema.prisma        modelos (manutenção + produção: BoletimProducao, ParadaProducao, CicloSecagem…)
+prisma/seed.ts              admin inicial, setores e catálogo da serraria (+ demo)
+prisma/dados/serraria.json  motivos de parada e equipamentos da linha (da planilha da serraria)
+src/lib/producao.ts         cálculos (m³, KPIs/OEE), rótulos e checklist das estufas
+src/app/(app)/producao/     páginas do módulo de produção (+ /producao/excel)
 src/proxy.ts                bloqueia páginas para quem não está logado
 src/lib/session.ts          sessão (cookie JWT httpOnly) e permissões
 src/app/actions/            Server Actions (login, requisições, cadastros)

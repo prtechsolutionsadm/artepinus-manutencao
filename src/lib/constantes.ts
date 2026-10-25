@@ -1,4 +1,4 @@
-import type { Perfil, Prioridade, StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
+import type { Perfil, PerfilProducao, Prioridade, StatusRequisicao, TipoManutencao } from "@/generated/prisma/enums";
 
 export const STATUS: Record<StatusRequisicao, { label: string; cor: string }> = {
   ABERTA: { label: "Aberta", cor: "bg-blue-50 text-blue-700 ring-blue-200" },
@@ -51,6 +51,13 @@ export const PERFIL: Record<Perfil, string> = {
   SUPERVISOR: "Supervisor",
   MANUTENTOR: "Manutentor",
   OPERADOR: "Operador",
+  SEM_ACESSO: "Sem acesso",
+};
+
+export const PERFIL_PRODUCAO: Record<PerfilProducao, string> = {
+  SUPERVISOR: "Supervisor",
+  APONTADOR: "Apontador",
+  CONSULTA: "Consulta",
 };
 
 export function formatarData(d: Date | null | undefined, comHora = false) {

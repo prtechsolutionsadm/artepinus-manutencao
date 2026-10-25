@@ -30,7 +30,7 @@ import {
 } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 import { PERFIS_RESPONSAVEIS, pode } from "@/lib/permissoes";
 
 type Params = { params: Promise<{ id: string }> };
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 }
 
 export default async function RequisicaoPage({ params }: Params) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
 

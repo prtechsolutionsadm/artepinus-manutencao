@@ -1,0 +1,346 @@
+{
+ "_origem": "Planilha de controle de produção da serraria (aba Paradas), Artepinus",
+ "equipamentosLinha": [
+  "Estaleiro",
+  "Elevador de Toras",
+  "Centralizador",
+  "1º Corte",
+  "Centrador de Bloco",
+  "Germinada",
+  "Dog",
+  "Refilador 1",
+  "Serra Fita 5Cab Lux",
+  "Serra Fita 5Cab Mill",
+  "Serra Fita 2Cab Lux",
+  "Banho",
+  "Gradeador",
+  "Refilador 2",
+  "Gradeador 2",
+  "Destopador",
+  "Picador",
+  "Transporte de Toras",
+  "Transporte de Tábuas",
+  "Transporte de Resíduos",
+  "Silo"
+ ],
+ "motivos": [
+  {
+   "codigo": 1,
+   "descricao": "Troca de serra – 1º corte",
+   "centro": "OPE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 2,
+   "descricao": "Troca de serra – 5 cabeçotes lux",
+   "centro": "OPE",
+   "equipamento": "Serra Fita 5Cab Lux"
+  },
+  {
+   "codigo": 3,
+   "descricao": "Troca de serra – 5cabeçotes mill",
+   "centro": "OPE",
+   "equipamento": "Serra Fita 5Cab Mill"
+  },
+  {
+   "codigo": 4,
+   "descricao": "Troca de serra – 2 cabeçotes lux",
+   "centro": "OPE",
+   "equipamento": "Serra Fita 2Cab Lux"
+  },
+  {
+   "codigo": 5,
+   "descricao": "Troca de serra – bloco",
+   "centro": "OPE",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 6,
+   "descricao": "1º corte – falta de toras",
+   "centro": "OPE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 7,
+   "descricao": "Problema elétrico na esteira de tora – 1º corte",
+   "centro": "ELE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 8,
+   "descricao": "Problema mecânico na esteira de toras – 1º corte",
+   "centro": "MEC",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 9,
+   "descricao": "Problema elétrico no otimizador de toras – 1º corte",
+   "centro": "ELE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 12,
+   "descricao": "Problema mecânico no centralizador de toras – 1º corte",
+   "centro": "MEC",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 13,
+   "descricao": "Problema elétrico na serra fita – 1º corte",
+   "centro": "ELE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 15,
+   "descricao": "Problema elétrico – bloqueadeira",
+   "centro": "ELE",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 16,
+   "descricao": "Problema mecânico – bloqueadeira",
+   "centro": "MEC",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 17,
+   "descricao": "Problema elétrico no centralizador – bloqueadeira",
+   "centro": "ELE",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 18,
+   "descricao": "Problema mecânico no centralizador – bloqueadeira",
+   "centro": "MEC",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 19,
+   "descricao": "Problema elétrico na esteira – bloqueadeira",
+   "centro": "ELE",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 20,
+   "descricao": "Problema mecânico na esteira – bloqueadeira",
+   "centro": "MEC",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 21,
+   "descricao": "Gargalo na esteira de costaneira – bloqueadeira",
+   "centro": "OPE",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 24,
+   "descricao": "Problema elétrico – dogueira 1",
+   "centro": "ELE",
+   "equipamento": "Dog"
+  },
+  {
+   "codigo": 26,
+   "descricao": "Problema elétrico no arrastador – dogueira 1",
+   "centro": "ELE",
+   "equipamento": "Dog"
+  },
+  {
+   "codigo": 28,
+   "descricao": "Problema elétrico – 5 cabeçotes mill",
+   "centro": "ELE",
+   "equipamento": "Serra Fita 5Cab Mill"
+  },
+  {
+   "codigo": 32,
+   "descricao": "Problema elétrico – refilador 1",
+   "centro": "ELE",
+   "equipamento": "Refilador 1"
+  },
+  {
+   "codigo": 33,
+   "descricao": "Problema mecânico – refilador 1",
+   "centro": "MEC",
+   "equipamento": "Refilador 1"
+  },
+  {
+   "codigo": 34,
+   "descricao": "Problema elétrico na esteira de saída – refilador 1",
+   "centro": "ELE",
+   "equipamento": "Refilador 1"
+  },
+  {
+   "codigo": 35,
+   "descricao": "Problema mecânico na esteira de saída – refilador 1",
+   "centro": "MEC",
+   "equipamento": "Refilador 1"
+  },
+  {
+   "codigo": 36,
+   "descricao": "Problema elétrico – 5 cabeçotes lux",
+   "centro": "ELE",
+   "equipamento": "Serra Fita 5Cab Lux"
+  },
+  {
+   "codigo": 37,
+   "descricao": "Problema mecânico – 5 cabeçotes lux",
+   "centro": "MEC",
+   "equipamento": "Serra Fita 5Cab Lux"
+  },
+  {
+   "codigo": 48,
+   "descricao": "Problema elétrico – gradeador 1 (grande)",
+   "centro": "ELE",
+   "equipamento": "Gradeador"
+  },
+  {
+   "codigo": 54,
+   "descricao": "Problema elétrico – picador",
+   "centro": "ELE",
+   "equipamento": "Picador"
+  },
+  {
+   "codigo": 55,
+   "descricao": "Problema elétrico – picador",
+   "centro": "ELE",
+   "equipamento": "Picador"
+  },
+  {
+   "codigo": 58,
+   "descricao": "Troca de bitola",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 59,
+   "descricao": "Tora/costaneira prensada no desviador",
+   "centro": "OPE",
+   "equipamento": "Germinada"
+  },
+  {
+   "codigo": 60,
+   "descricao": "Problema elétrico no desviador",
+   "centro": "ELE",
+   "equipamento": "Germinada"
+  },
+  {
+   "codigo": 62,
+   "descricao": "Outros",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 63,
+   "descricao": "Gargalo – 5 cabeçotes lux",
+   "centro": "OPE",
+   "equipamento": "Serra Fita 5Cab Lux"
+  },
+  {
+   "codigo": 64,
+   "descricao": "Bloco prensado – lux 5 cabeçotes",
+   "centro": "OPE",
+   "equipamento": "Serra Fita 5Cab Lux"
+  },
+  {
+   "codigo": 65,
+   "descricao": "Bloco atravessado – dogueira",
+   "centro": "OPE",
+   "equipamento": "Dog"
+  },
+  {
+   "codigo": 66,
+   "descricao": "Madeira atravessada na correia do picador",
+   "centro": "OPE",
+   "equipamento": "Picador"
+  },
+  {
+   "codigo": 67,
+   "descricao": "Costaneira prensada – refilador 1",
+   "centro": "OPE",
+   "equipamento": "Refilador 1"
+  },
+  {
+   "codigo": 68,
+   "descricao": "Inicio de produção – manhã",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 69,
+   "descricao": "Inicio de produção – volta do almoço",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 70,
+   "descricao": "Inicio de produção – volta do café",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 71,
+   "descricao": "Gargalo da mill",
+   "centro": "OPE",
+   "equipamento": "Serra Fita 5Cab Mill"
+  },
+  {
+   "codigo": 73,
+   "descricao": "Parado para passar costaneira grossa",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 74,
+   "descricao": "Madeira atravessada na saída da bloqueadeira",
+   "centro": "OPE",
+   "equipamento": "Centrador de Bloco"
+  },
+  {
+   "codigo": 75,
+   "descricao": "Tora atravessada na esteira – 1o corte",
+   "centro": "OPE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 76,
+   "descricao": "Troca de facas – picador",
+   "centro": "OPE",
+   "equipamento": "Picador"
+  },
+  {
+   "codigo": 79,
+   "descricao": "Gargalo no gradeador grande",
+   "centro": "OPE",
+   "equipamento": "Gradeador"
+  },
+  {
+   "codigo": 80,
+   "descricao": "Problema no compressor",
+   "centro": "MEC",
+   "equipamento": null
+  },
+  {
+   "codigo": 81,
+   "descricao": "Falta de energia",
+   "centro": "ELE",
+   "equipamento": null
+  },
+  {
+   "codigo": 82,
+   "descricao": "Toras de comprimentos diferentes misturas",
+   "centro": "OPE",
+   "equipamento": null
+  },
+  {
+   "codigo": 83,
+   "descricao": "Tora prensada no 1o corte",
+   "centro": "OPE",
+   "equipamento": "1º Corte"
+  },
+  {
+   "codigo": 84,
+   "descricao": "Tora muito grossa",
+   "centro": "OPE",
+   "equipamento": "1º Corte"
+  }
+ ]
+}

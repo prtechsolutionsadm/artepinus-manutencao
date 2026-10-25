@@ -22,7 +22,18 @@ function ticks(maximo: number) {
 type Serie = { chave: string; rotulo: string };
 
 /** Colunas empilhadas por categoria (ex.: mês) com legenda, dica ao passar o mouse e tabela. */
-export function ColunasEmpilhadas({ dados, series, titulo }: { dados: ({ rotulo: string } & Record<string, number | string>)[]; series: Serie[]; titulo: string }) {
+export function ColunasEmpilhadas({
+  dados,
+  series,
+  titulo,
+  meta,
+}: {
+  dados: ({ rotulo: string } & Record<string, number | string>)[];
+  series: Serie[];
+  titulo: string;
+  /** Marca de referência por coluna (ex.: meta do dia). */
+  meta?: Serie;
+}) {
   const [ativo, setAtivo] = useState<number | null>(null);
   const [tabela, setTabela] = useState(false);
   // Desenha na largura real (px): o texto mantém o tamanho em qualquer tela
@@ -35,8 +46,9 @@ export function ColunasEmpilhadas({ dados, series, titulo }: { dados: ({ rotulo:
     ro.observe(el);
     return () => ro.disconnect();
   }, [tabela]);
-  const totais = dados.map((d) => series.reduce((t, s) => t + Number(d[s.chave] ?? 0), 0));
-  const escala = ticks(Math.max(...totais, 1));
+  const totais = dados.map((d) => Math.round(series.reduce((t, s) => t + Number(d[s.chave] ?? 0), 0) * 100) / 100);
+  const metas = meta ? dados.map((d) => Number(d[meta.chave] ?? 0)) : [];
+  const escala = ticks(Math.max(...totais, ...metas, 1));
   const topo = escala[escala.length - 1];
   const H = W < 480 ? 200 : 240, ESQ = 28, BASE = H - 24, ALTURA = BASE - 8;
   const banda = (W - ESQ) / Math.max(dados.length, 1);
@@ -54,13 +66,22 @@ export function ColunasEmpilhadas({ dados, series, titulo }: { dados: ({ rotulo:
               {s.rotulo}
             </li>
           ))}
+          {meta && (
+            <li className="inline-flex items-center gap-1.5">
+              <span className="h-0.5 w-3.5 bg-stone-800" />
+              {meta.rotulo}
+            </li>
+          )}
         </ul>
         <button type="button" onClick={() => setTabela(!tabela)} className="text-xs font-medium text-marca-700 hover:underline">
           {tabela ? "Ver gráfico" : "Ver tabela"}
         </button>
       </div>
       {tabela ? (
-        <Tabela cabecalho={["", ...series.map((s) => s.rotulo), "Total"]} linhas={dados.map((d, i) => [d.rotulo, ...series.map((s) => String(d[s.chave] ?? 0)), String(totais[i])])} />
+        <Tabela
+          cabecalho={["", ...series.map((s) => s.rotulo), "Total", ...(meta ? [meta.rotulo] : [])]}
+          linhas={dados.map((d, i) => [d.rotulo, ...series.map((s) => String(d[s.chave] ?? 0)), String(totais[i]), ...(meta ? [String(metas[i])] : [])])}
+        />
       ) : (
         <div className="relative w-full min-w-0 overflow-hidden" ref={caixa}>
           <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block" role="img" aria-label={titulo} onMouseLeave={() => setAtivo(null)}>
@@ -93,6 +114,9 @@ export function ColunasEmpilhadas({ dados, series, titulo }: { dados: ({ rotulo:
                     const path = `M${x},${yTopo + h} V${yTopo + r} Q${x},${yTopo} ${x + r},${yTopo} H${x + largura - r} Q${x + largura},${yTopo} ${x + largura},${yTopo + r} V${yTopo + h} Z`;
                     return <path key={s.si} d={path} fill={SERIES[s.si]} />;
                   })}
+                  {meta && metas[i] > 0 && (
+                    <line x1={cx - Math.min(banda * 0.45, largura * 0.9)} x2={cx + Math.min(banda * 0.45, largura * 0.9)} y1={y(metas[i])} y2={y(metas[i])} stroke="#292524" strokeWidth={2} strokeLinecap="round" />
+                  )}
                   {i % pularRotulo === 0 && (
                     <text x={cx} y={H - 7} textAnchor="middle" fontSize={11} className="fill-stone-500">
                       {d.rotulo}
@@ -121,6 +145,11 @@ export function ColunasEmpilhadas({ dados, series, titulo }: { dados: ({ rotulo:
               <div className="mt-1 flex justify-between border-t border-stone-100 pt-1 text-stone-600">
                 Total <span className="font-semibold tabular-nums text-stone-900">{totais[ativo]}</span>
               </div>
+              {meta && (
+                <div className="flex justify-between text-stone-600">
+                  {meta.rotulo} <span className="font-medium tabular-nums text-stone-900">{metas[ativo]}</span>
+                </div>
+              )}
             </div>
           )}
         </div>

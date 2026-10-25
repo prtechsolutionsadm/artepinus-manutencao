@@ -6,13 +6,13 @@ import { ListaRequisicoes, selectItemRequisicao } from "@/components/ListaRequis
 import { STATUS_PENDENTES } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { pode } from "@/lib/permissoes";
-import { exigirUsuario } from "@/lib/session";
+import { exigirModulo } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Equipamento" };
 
 /** Destino do QR Code colado na máquina: abrir requisição ou ver o que está pendente. */
 export default async function QrPage({ params }: { params: Promise<{ codigo: string }> }) {
-  const eu = await exigirUsuario();
+  const eu = await exigirModulo("manutencao");
   const codigo = decodeURIComponent((await params).codigo).toUpperCase();
   const equip = await db.equipamento.findUnique({ where: { codigo }, include: { setor: { select: { nome: true } } } });
   if (!equip) notFound();
