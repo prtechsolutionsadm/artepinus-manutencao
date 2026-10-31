@@ -57,7 +57,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
       <div className="lg:pl-64 print:pl-0">
         <header className="nao-imprimir sticky top-0 z-20 border-b border-stone-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
-          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:h-16 lg:px-8">
+          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:h-16 lg:px-8 2xl:max-w-[1440px]">
             <Link href={inicioDe(eu)} className="flex items-center gap-2.5 lg:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/marca.svg" alt="" className="h-7 w-auto" />
@@ -84,10 +84,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
+        <main className="mx-auto max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-7 lg:pt-7 2xl:max-w-[1440px]">
           <SincronizadorOffline />
           {children}
-          <Rodape className="nao-imprimir mt-12 border-t border-stone-200/70 pt-6" />
+          {/* No computador os créditos ficam no menu lateral */}
+          <Rodape className="nao-imprimir mt-12 border-t border-stone-200/70 pt-6 lg:hidden" />
         </main>
       </div>
 

@@ -125,6 +125,9 @@ export function MenuLateral({
         ))}
       </nav>
 
+      <p className="px-5 pb-3 text-[10px] leading-snug text-white/35">
+        © {new Date().getFullYear()} Artepinus · Desenvolvido por PR Tech Solutions
+      </p>
       <details className="group relative border-t border-white/10">
         <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 hover:bg-white/5">
           <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-sm font-semibold">{iniciais(usuario.nome)}</span>

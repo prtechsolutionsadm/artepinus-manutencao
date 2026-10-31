@@ -46,7 +46,7 @@ export async function dadosInicio() {
     db.auditoria.findMany({
       where: { OR: ["boletim.", "ciclo.", "toras.", "pacote.", "colheita.", "estoque."].map((p) => ({ acao: { startsWith: p } })) },
       orderBy: { criadoEm: "desc" },
-      take: 8,
+      take: 15,
       include: { usuario: { select: { nome: true } } },
     }),
   ]);
