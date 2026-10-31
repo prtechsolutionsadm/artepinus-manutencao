@@ -17,12 +17,12 @@ export const EMPRESA = {
    * estiver preenchido (nada de telefone ou endereço inventado).
    */
   contato: {
-    telefone: "",
+    telefone: "(49) 3563-0769",
     whatsapp: "", // só números com DDI e DDD, ex.: 5541999999999
     email: "",
-    endereco: "",
-    cidade: "", // ex.: "Cidade – UF"
-    mapa: "", // link do Google Maps
+    endereco: "Rodovia Daniel Lessing",
+    cidade: "Caçador – SC · CEP 89503-575",
+    mapa: "https://maps.app.goo.gl/Q7RT7KDz8AQyWkZMA", // link do Google Maps
     instagram: "artepinus_ind", // usuário, sem @
   },
 };

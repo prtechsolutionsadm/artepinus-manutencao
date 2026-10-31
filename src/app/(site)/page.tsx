@@ -29,7 +29,7 @@ export default function SitePage() {
   const anos = anosDeHistoria();
   const { contato } = EMPRESA;
   const contatos = [
-    contato.telefone && { Icone: Phone, rotulo: "Telefone", valor: contato.telefone, href: `tel:${contato.telefone.replace(/\D/g, "")}` },
+    contato.telefone && { Icone: Phone, rotulo: "Telefone", valor: contato.telefone, href: `tel:+55${contato.telefone.replace(/\D/g, "")}` },
     contato.whatsapp && { Icone: MessageCircle, rotulo: "WhatsApp", valor: "Conversar pelo WhatsApp", href: `https://wa.me/${contato.whatsapp}` },
     contato.email && { Icone: Mail, rotulo: "E-mail", valor: contato.email, href: `mailto:${contato.email}` },
     contato.instagram && { Icone: IconeInstagram, rotulo: "Instagram", valor: `@${contato.instagram}`, href: `https://www.instagram.com/${contato.instagram}/` },
@@ -122,6 +122,7 @@ export default function SitePage() {
                 ["Razão social", EMPRESA.razaoSocial],
                 ["CNPJ", EMPRESA.cnpj],
                 ["Fundação", EMPRESA.fundacao],
+                ["Localização", "Caçador – SC"],
                 ["Atuação", "Madeira serrada de pinus · mercado interno e externo"],
               ].map(([r, v]) => (
                 <div key={r} className="grid grid-cols-3 gap-4 border-b border-stone-200 py-3">

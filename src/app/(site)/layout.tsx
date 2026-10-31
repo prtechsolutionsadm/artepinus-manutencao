@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ArrowRight, Menu } from "lucide-react";
+import { ArrowRight, MapPin, Menu, Phone } from "lucide-react";
 import { IconeInstagram } from "@/components/site/IconeInstagram";
 import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
 
@@ -107,8 +107,32 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
             </ul>
           </div>
           <div>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Redes</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-stone-400">Contato</h2>
             <ul className="mt-4 space-y-2 text-sm">
+              {EMPRESA.contato.telefone && (
+                <li>
+                  <a href={`tel:+55${EMPRESA.contato.telefone.replace(/\D/g, "")}`} className="inline-flex items-center gap-2 text-stone-600 hover:text-marca-700">
+                    <Phone className="h-4 w-4" /> {EMPRESA.contato.telefone}
+                  </a>
+                </li>
+              )}
+              {(EMPRESA.contato.endereco || EMPRESA.contato.cidade) && (
+                <li>
+                  <a
+                    href={EMPRESA.contato.mapa || undefined}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-start gap-2 text-stone-600 hover:text-marca-700"
+                  >
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      {EMPRESA.contato.endereco}
+                      {EMPRESA.contato.endereco && EMPRESA.contato.cidade && <br />}
+                      {EMPRESA.contato.cidade}
+                    </span>
+                  </a>
+                </li>
+              )}
               {instagram && (
                 <li>
                   <a href={instagram} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-stone-600 hover:text-marca-700">
