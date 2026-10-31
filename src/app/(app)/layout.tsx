@@ -3,21 +3,20 @@ import Link from "next/link";
 import { CircleHelp } from "lucide-react";
 import { sair } from "@/app/actions/auth";
 import { BotaoSair } from "@/components/BotaoSair";
-import { BarraInferior, BuscaTopo, MenuLateral } from "@/components/Navegacao";
+import { BarraInferior, BuscaTopo, MenuLateral, SecaoAtual } from "@/components/Navegacao";
 import { SincronizadorOffline } from "@/components/SincronizadorOffline";
 import { Rodape } from "@/components/Rodape";
 import { Sininho } from "@/components/Sininho";
 import { PERFIL, PERFIL_PRODUCAO } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { COOKIE_MODULO, iniciais, menusDoUsuario, moduloSalvo } from "@/lib/menu";
-import { podeProducao, temModulo } from "@/lib/permissoes";
+import { temModulo } from "@/lib/permissoes";
 import { exigirUsuario, inicioDe } from "@/lib/session";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const eu = await exigirUsuario();
   const menus = menusDoUsuario(eu);
   const salvo = moduloSalvo((await cookies()).get(COOKIE_MODULO)?.value);
-  const lancar = podeProducao(eu, "lancar");
   const perfilLabel = [
     temModulo(eu, "manutencao") ? PERFIL[eu.perfil] : null,
     eu.perfilProducao && eu.perfil !== "ADMIN" && eu.perfil !== "GERENTE" ? `Produção: ${PERFIL_PRODUCAO[eu.perfilProducao]}` : null,
@@ -54,17 +53,18 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-dvh">
-      <MenuLateral menus={menus} salvo={salvo} podeLancarProducao={lancar} usuario={{ nome: eu.nome, perfilLabel }} sair={sair} />
+      <MenuLateral menus={menus} salvo={salvo} usuario={{ nome: eu.nome, perfilLabel }} sair={sair} />
 
       <div className="lg:pl-64 print:pl-0">
-        <header className="nao-imprimir sticky top-0 z-20 border-b border-stone-200/80 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
-          <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:px-8">
+        <header className="nao-imprimir sticky top-0 z-20 border-b border-stone-200 bg-white/95 pt-[env(safe-area-inset-top)] backdrop-blur">
+          <div className="mx-auto flex h-14 max-w-6xl items-center gap-3 px-4 sm:px-6 lg:h-16 lg:px-8">
             <Link href={inicioDe(eu)} className="flex items-center gap-2.5 lg:hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/marca.svg" alt="" className="h-7 w-auto" />
               <span className="font-serif text-lg font-bold italic tracking-wide text-[#177009]">ARTEPINUS</span>
             </Link>
 
+            <SecaoAtual menus={menus} salvo={salvo} />
             <BuscaTopo menus={menus} salvo={salvo} />
 
             <div className="ml-auto flex items-center gap-1">
@@ -84,7 +84,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10 lg:pt-8">
+        <main className="mx-auto max-w-6xl px-4 pb-28 pt-5 sm:px-6 lg:px-8 lg:pb-10 lg:pt-7">
           <SincronizadorOffline />
           {children}
           <Rodape className="nao-imprimir mt-12 border-t border-stone-200/70 pt-6" />

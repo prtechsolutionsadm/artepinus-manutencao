@@ -20,9 +20,9 @@ export function PrioridadeBadge({ prioridade }: { prioridade: Prioridade }) {
 
 export function Titulo({ children, subtitulo, acao }: { children: React.ReactNode; subtitulo?: React.ReactNode; acao?: React.ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-3 sm:mb-6">
       <div className="min-w-0">
-        <h1 className="text-2xl font-bold text-stone-900 sm:text-[28px]">{children}</h1>
+        <h1 className="text-xl font-semibold tracking-tight text-stone-900 sm:text-2xl">{children}</h1>
         {subtitulo && <p className="mt-1 text-sm text-stone-500">{subtitulo}</p>}
       </div>
       {acao}

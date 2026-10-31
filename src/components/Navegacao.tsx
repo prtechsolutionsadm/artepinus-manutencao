@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronRight, ClipboardList, Flame, House, LayoutDashboard, LayoutGrid, Package, Plus, QrCode, Search, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChevronRight, ChevronUp, ClipboardList, Flame, House, LayoutGrid, Package, Plus, QrCode, Search, type LucideIcon } from "lucide-react";
 import { BotaoSair } from "@/components/BotaoSair";
 import { ICONES } from "@/components/icones";
-import { COOKIE_MODULO, iniciais, itemAtivo, moduloDaRota, type GrupoNav } from "@/lib/menu";
+import { COOKIE_MODULO, TITULO_CONTA, iniciais, itemAtivo, moduloDaRota, type GrupoNav, type ItemNav } from "@/lib/menu";
 import { MODULOS, type Modulo } from "@/lib/permissoes";
 
 type Usuario = { nome: string; perfilLabel: string };
@@ -32,16 +32,12 @@ export function useModulo(menus: Menus, salvo: Modulo | null): Modulo {
   return escolhido && disponiveis.includes(escolhido) ? escolhido : disponiveis[0];
 }
 
-const ACAO_PRINCIPAL: Record<Modulo, { href: string; label: string }> = {
-  manutencao: { href: "/requisicoes/nova", label: "Nova requisição" },
-  producao: { href: "/producao/boletins/novo", label: "Novo boletim" },
-};
 
 export function TrocaModulo({ menus, modulo }: { menus: Menus; modulo: Modulo }) {
   const disponiveis = Object.keys(menus) as Modulo[];
   if (disponiveis.length < 2) return null;
   return (
-    <div className="grid grid-cols-2 gap-1 rounded-xl bg-stone-100 p-1" role="tablist" aria-label="Módulo">
+    <div className="grid grid-cols-2 gap-1 rounded-md bg-black/20 p-1" role="tablist" aria-label="Módulo">
       {disponiveis.map((m) => (
         <Link
           key={m}
@@ -49,7 +45,7 @@ export function TrocaModulo({ menus, modulo }: { menus: Menus; modulo: Modulo })
           role="tab"
           aria-selected={m === modulo}
           className={`rounded-lg px-2 py-1.5 text-center text-sm font-semibold transition ${
-            m === modulo ? "bg-white text-marca-700 shadow-sm" : "text-stone-500 hover:text-stone-800"
+            m === modulo ? "bg-white text-marca-800" : "text-white/70 hover:text-white"
           }`}
         >
           {MODULOS[m].nome}
@@ -59,80 +55,127 @@ export function TrocaModulo({ menus, modulo }: { menus: Menus; modulo: Modulo })
   );
 }
 
+/** Item do menu lateral: as etapas do processo levam o número no lugar do ícone. */
+function ItemLateral({ item, ativo }: { item: ItemNav; ativo: boolean }) {
+  const Icone = ICONES[item.icone];
+  return (
+    <Link
+      href={item.href}
+      aria-current={ativo ? "page" : undefined}
+      className={`relative flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition ${
+        ativo ? "bg-white/12 text-white" : "text-white/70 hover:bg-white/6 hover:text-white"
+      }`}
+    >
+      {ativo && <span className="absolute inset-y-1.5 left-0 w-[3px] rounded-r bg-[#7bc96f]" aria-hidden />}
+      {item.etapa ? (
+        <span
+          className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-full text-[10px] font-bold tabular-nums ${
+            ativo ? "bg-white text-marca-900" : "border border-white/35 text-white/80"
+          }`}
+          aria-hidden
+        >
+          {item.etapa}
+        </span>
+      ) : (
+        <Icone className={`h-[18px] w-[18px] shrink-0 ${ativo ? "text-white" : "text-white/55"}`} strokeWidth={2} />
+      )}
+      <span className="truncate">{item.label}</span>
+    </Link>
+  );
+}
+
 export function MenuLateral({
   menus,
   salvo,
-  podeLancarProducao,
   usuario,
   sair,
 }: {
   menus: Menus;
   salvo: Modulo | null;
-  podeLancarProducao: boolean;
   usuario: Usuario;
   sair: () => Promise<void>;
 }) {
   const path = usePathname();
   const modulo = useModulo(menus, salvo);
-  const grupos = menus[modulo] ?? [];
-  const acao = modulo === "manutencao" || podeLancarProducao ? ACAO_PRINCIPAL[modulo] : null;
+  const grupos = (menus[modulo] ?? []).filter((g) => g.titulo !== TITULO_CONTA);
+  const conta = (menus[modulo] ?? []).find((g) => g.titulo === TITULO_CONTA)?.itens ?? [];
   return (
-    <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-stone-200 bg-white lg:flex">
-      <Link href={MODULOS[modulo].inicio} className="flex flex-col items-center gap-1 px-5 pb-4 pt-6" aria-label={`Artepinus · ${MODULOS[modulo].nome}`}>
+    <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-marca-950 text-white lg:flex">
+      <Link href={MODULOS[modulo].inicio} className="flex items-center gap-3 border-b border-white/10 px-5 py-5" aria-label={`Artepinus · ${MODULOS[modulo].nome}`}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.svg" alt="Artepinus" className="h-16 w-auto" />
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-stone-400">{MODULOS[modulo].nome}</div>
+        <img src="/marca-branca.svg" alt="" className="h-8 w-auto" />
+        <div className="leading-tight">
+          <div className="font-serif text-lg font-bold italic tracking-wide">ARTEPINUS</div>
+          <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/50">{MODULOS[modulo].nome}</div>
+        </div>
       </Link>
 
-      <div className="space-y-3 px-4 pb-2">
+      <div className="px-3 pt-3">
         <TrocaModulo menus={menus} modulo={modulo} />
-        {acao && (
-          <Link href={acao.href} className="btn-primario w-full py-2.5 shadow-sm shadow-marca-700/20">
-            <Plus className="h-4 w-4" /> {acao.label}
-          </Link>
-        )}
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-4">
-        {grupos.map((g) => (
-          <div key={g.titulo}>
-            <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-stone-400">{g.titulo}</div>
+      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+        {grupos.map((g, n) => (
+          <div key={g.titulo || n}>
+            {g.titulo && <div className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">{g.titulo}</div>}
             <ul className="space-y-0.5">
-              {g.itens.map((i) => {
-                const Icone = ICONES[i.icone];
-                const on = itemAtivo(path, i.href);
-                return (
-                  <li key={i.href}>
-                    <Link
-                      href={i.href}
-                      aria-current={on ? "page" : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition ${
-                        on ? "bg-marca-50 text-marca-700" : "text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-                      }`}
-                    >
-                      <Icone className={`h-[18px] w-[18px] ${on ? "text-marca-600" : "text-stone-400"}`} strokeWidth={2} />
-                      {i.label}
-                    </Link>
-                  </li>
-                );
-              })}
+              {g.itens.map((i) => (
+                <li key={i.href}>
+                  <ItemLateral item={i} ativo={itemAtivo(path, i.href)} />
+                </li>
+              ))}
             </ul>
           </div>
         ))}
       </nav>
 
-      <div className="flex items-center gap-3 border-t border-stone-200 p-4">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-marca-100 text-sm font-semibold text-marca-700">
-          {iniciais(usuario.nome)}
-        </span>
-        <div className="min-w-0 flex-1 leading-tight">
-          <div className="truncate text-sm font-semibold">{usuario.nome}</div>
-          <div className="truncate text-xs text-stone-500">{usuario.perfilLabel}</div>
+      <details className="group relative border-t border-white/10">
+        <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 hover:bg-white/5">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/15 text-sm font-semibold">{iniciais(usuario.nome)}</span>
+          <div className="min-w-0 flex-1 leading-tight">
+            <div className="truncate text-sm font-semibold">{usuario.nome}</div>
+            <div className="truncate text-xs text-white/55">{usuario.perfilLabel}</div>
+          </div>
+          <ChevronUp className="h-4 w-4 shrink-0 text-white/50 transition group-open:rotate-180" />
+        </summary>
+        <div className="absolute inset-x-3 bottom-full mb-2 overflow-hidden rounded-md border border-stone-200 bg-white py-1 text-stone-700 shadow-xl">
+          {conta.map((i) => {
+            const Icone = ICONES[i.icone];
+            return (
+              <Link key={i.href} href={i.href} className="flex items-center gap-3 px-3 py-2 text-sm font-medium hover:bg-stone-50">
+                <Icone className="h-4 w-4 text-stone-400" /> {i.label}
+              </Link>
+            );
+          })}
+          <div className="my-1 border-t border-stone-100" />
+          <BotaoSair sair={sair} variante="item" />
         </div>
-        <BotaoSair sair={sair} />
-      </div>
+      </details>
     </aside>
   );
+}
+
+/** Nome da tela atual no topo (orienta quem está navegando). */
+export function SecaoAtual({ menus, salvo }: { menus: Menus; salvo: Modulo | null }) {
+  const path = usePathname();
+  const modulo = useModulo(menus, salvo);
+  const grupos = menus[modulo] ?? [];
+  for (const g of grupos) {
+    const i = g.itens.find((x) => itemAtivo(path, x.href) || (x.href !== MODULOS[modulo].inicio && path.startsWith(x.href + "/")));
+    if (i) {
+      return (
+        <div className="hidden min-w-0 items-center gap-2 text-sm lg:flex">
+          {g.titulo && g.titulo !== TITULO_CONTA && <span className="text-stone-400">{g.titulo}</span>}
+          {g.titulo && g.titulo !== TITULO_CONTA && <ChevronRight className="h-3.5 w-3.5 text-stone-300" />}
+          <span className="truncate font-semibold text-stone-800">
+            {i.etapa ? `${i.etapa}. ` : ""}
+            {i.label}
+          </span>
+        </div>
+      );
+    }
+  }
+  return null;
 }
 
 type Aba = { href: string; label: string; Icone: LucideIcon; destaque?: boolean };
@@ -146,7 +189,7 @@ const ABAS: Record<Modulo, Aba[]> = {
     { href: "/menu", label: "Mais", Icone: LayoutGrid },
   ],
   producao: [
-    { href: "/producao", label: "Painel", Icone: LayoutDashboard },
+    { href: "/producao", label: "Início", Icone: House },
     { href: "/producao/pacotes", label: "Pacotes", Icone: Package },
     { href: "/producao/escanear", label: "Ler QR do pacote", Icone: QrCode, destaque: true },
     { href: "/producao/estufas", label: "Estufas", Icone: Flame },
@@ -170,7 +213,7 @@ export function BarraInferior({ menus, salvo }: { menus: Menus; salvo: Modulo | 
                 <Link
                   href={href}
                   aria-label={label}
-                  className="-mt-5 grid h-14 w-14 place-items-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-700/30 ring-4 ring-white active:scale-95"
+                  className="-mt-4 grid h-13 w-13 place-items-center rounded-full bg-marca-700 text-white shadow-lg shadow-marca-900/30 ring-4 ring-white active:scale-95"
                 >
                   <Icone className="h-6 w-6" strokeWidth={2.5} />
                 </Link>
@@ -225,17 +268,22 @@ export function MenuCelular({ menus, salvo }: { menus: Menus; salvo: Modulo | nu
   return (
     <>
       <TrocaModulo menus={menus} modulo={modulo} />
-      {(menus[modulo] ?? []).map((g) => (
-        <section key={g.titulo}>
-          <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">{g.titulo}</h2>
+      {(menus[modulo] ?? []).map((g, n) => (
+        <section key={g.titulo || n}>
+          {g.titulo && <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-stone-400">{g.titulo}</h2>}
           <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl border border-stone-200 bg-white">
             {g.itens.map((i) => {
               const Icone = ICONES[i.icone];
               return (
                 <li key={i.href}>
                   <Link href={i.href} className="flex items-center gap-3 px-4 py-3.5 active:bg-stone-50">
-                    <span className="grid h-9 w-9 place-items-center rounded-xl bg-stone-100 text-stone-600">
+                    <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-stone-100 text-stone-600">
                       <Icone className="h-[18px] w-[18px]" />
+                      {i.etapa && (
+                        <span className="absolute -right-1.5 -top-1.5 grid h-4 w-4 place-items-center rounded-full bg-marca-700 text-[9px] font-bold text-white ring-2 ring-white">
+                          {i.etapa}
+                        </span>
+                      )}
                     </span>
                     <span className="flex-1 font-medium">{i.label}</span>
                     <ChevronRight className="h-4 w-4 text-stone-300" />

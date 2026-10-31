@@ -26,11 +26,14 @@ export type IconeMenu =
   | "escanear"
   | "florestas";
 
-export type ItemNav = { href: string; label: string; icone: IconeMenu };
+/** `etapa`: posição no processo (1 = floresta … 5 = pacote), mostrada no menu. */
+export type ItemNav = { href: string; label: string; icone: IconeMenu; etapa?: number };
 export type GrupoNav = { titulo: string; itens: ItemNav[] };
 
+export const TITULO_CONTA = "Conta";
+
 const CONTA: GrupoNav = {
-  titulo: "Conta",
+  titulo: TITULO_CONTA,
   itens: [
     { href: "/notificacoes", label: "Notificações", icone: "notificacoes" },
     { href: "/perfil", label: "Meu perfil", icone: "perfil" },
@@ -75,22 +78,24 @@ function menuManutencao(u: UsuarioComPerfis): GrupoNav[] {
 function menuProducao(u: UsuarioComPerfis): GrupoNav[] {
   const se = (cond: boolean, item: ItemNav) => (cond ? [item] : []);
   return [
+    { titulo: "", itens: [{ href: "/producao", label: "Início", icone: "inicio" }] },
     {
-      titulo: "Produção",
+      // Na ordem do processo: da floresta ao pacote
+      titulo: "Operação",
       itens: [
-        { href: "/producao", label: "Painel", icone: "painel" },
-        { href: "/producao/boletins", label: "Boletins da serraria", icone: "boletins" },
-        { href: "/producao/estufas", label: "Estufas", icone: "estufas" },
-        { href: "/producao/estoque", label: "Estoque de madeira", icone: "estoque" },
+        { href: "/producao/florestas", label: "Florestas e colheitas", icone: "florestas", etapa: 1 },
+        { href: "/producao/toras", label: "Recebimento de toras", icone: "toras", etapa: 2 },
+        { href: "/producao/boletins", label: "Serraria (boletins)", icone: "boletins", etapa: 3 },
+        { href: "/producao/estufas", label: "Estufas", icone: "estufas", etapa: 4 },
+        { href: "/producao/pacotes", label: "Pacotes e expedição", icone: "pacotes", etapa: 5 },
+        { href: "/producao/escanear", label: "Ler QR do pacote", icone: "escanear" },
       ],
     },
     {
-      titulo: "Rastreabilidade",
+      titulo: "Gestão",
       itens: [
-        { href: "/producao/pacotes", label: "Pacotes", icone: "pacotes" },
-        { href: "/producao/escanear", label: "Ler QR do pacote", icone: "escanear" },
-        { href: "/producao/florestas", label: "Florestas e colheitas", icone: "florestas" },
-        { href: "/producao/toras", label: "Recebimento de toras", icone: "toras" },
+        { href: "/producao/indicadores", label: "Indicadores", icone: "indicadores" },
+        { href: "/producao/estoque", label: "Estoque de madeira", icone: "estoque" },
       ],
     },
     {

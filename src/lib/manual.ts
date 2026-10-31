@@ -57,7 +57,9 @@ export const MANUAL: Secao[] = [
           { tipo: "lista", itens: [
             "O sistema fica atrás do site da empresa: no site, toque em Acessar sistema (ou abra o app instalado).",
             "No computador: o menu fica na lateral esquerda; o sininho de notificações fica no topo.",
-            "No celular: use a barra de baixo — Painel, Pacotes, o botão do meio para ler o QR de um pacote, Estufas e Mais. Em Mais estão as demais telas e o botão Sair.",
+            "A tela Início mostra o que precisa de atenção (boletim não lançado, estufa passando da previsão, pacotes por formar) e os botões para lançar cada etapa.",
+            "O menu segue a ordem do processo: 1 Florestas e colheitas → 2 Recebimento de toras → 3 Serraria → 4 Estufas → 5 Pacotes e expedição. Indicadores e estoque ficam em Gestão.",
+            "No celular: use a barra de baixo — Início, Pacotes, o botão do meio para ler o QR de um pacote, Estufas e Mais. Em Mais estão as demais telas e o botão Sair.",
             "A busca do topo encontra requisições pelo número (ex.: 25 ou #00025), título ou código do equipamento.",
           ] },
         ],
@@ -466,7 +468,7 @@ export const MANUAL: Secao[] = [
   },
   {
     id: "producao-indicadores",
-    titulo: "Painel e indicadores de produção",
+    titulo: "Indicadores de produção",
     resumo: "OEE, disponibilidade, Pareto das paradas e comparativo mensal",
     modulo: "producao",
     topicos: [

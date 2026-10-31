@@ -51,8 +51,11 @@ export function FormBoletim({
   equipamentos,
   metas,
   cargas,
+  dataPadrao,
 }: {
   inicial: BoletimInicial | null;
+  /** Data já escolhida (ex.: vindo de uma pendência "boletim de ontem não lançado"). */
+  dataPadrao?: string;
   motivos: MotivoOpcao[];
   equipamentos: EquipamentoOpcao[];
   metas: Record<string, Meta>;
@@ -64,7 +67,7 @@ export function FormBoletim({
 
   const metaDe = (dia: string) => metas[mesDe(dia)] ?? null;
   const hoje = hojeSP();
-  const [data, setData] = useState(inicial?.data ?? hoje);
+  const [data, setData] = useState(inicial?.data ?? (dataPadrao && dataPadrao <= hoje ? dataPadrao : hoje));
   const [metaM3, setMetaM3] = useState(txt(inicial?.metaM3 ?? metaDe(hoje)?.metaDiariaM3));
   const [horas, setHoras] = useState(txt(inicial?.horasProgramadas ?? metaDe(hoje)?.horasDia ?? 8.8));
   const [metaEditada, setMetaEditada] = useState(!!inicial);
