@@ -101,13 +101,9 @@ export function MenuLateral({
   const conta = (menus[modulo] ?? []).find((g) => g.titulo === TITULO_CONTA)?.itens ?? [];
   return (
     <aside className="nao-imprimir fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-marca-950 text-white lg:flex">
-      <Link href={MODULOS[modulo].inicio} className="flex items-center gap-3 border-b border-white/10 px-5 py-5" aria-label={`Artepinus · ${MODULOS[modulo].nome}`}>
+      <Link href={MODULOS[modulo].inicio} className="flex justify-center border-b border-white/10 px-5 py-5" aria-label="Artepinus · início">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/marca-branca.svg" alt="" className="h-8 w-auto" />
-        <div className="leading-tight">
-          <div className="font-serif text-lg font-bold italic tracking-wide">ARTEPINUS</div>
-          <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-white/50">{MODULOS[modulo].nome}</div>
-        </div>
+        <img src="/logo-branco.svg" alt="Artepinus" className="h-14 w-auto" />
       </Link>
 
       <div className="px-3 pt-3">
