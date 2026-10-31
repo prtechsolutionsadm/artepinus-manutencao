@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FileSpreadsheet, Flame, Plus, TreePine, Boxes } from "lucide-react";
+import { FileSpreadsheet, Flame, Package, Plus, TreePine, Boxes } from "lucide-react";
 import { BarrasHorizontais, ColunasEmpilhadas } from "@/components/Graficos";
 import { BotaoLink, Titulo, Vazio } from "@/components/ui";
 import { formatarDuracao } from "@/lib/constantes";
 import { painelProducao } from "@/lib/indicadores-producao";
 import { podeProducao } from "@/lib/permissoes";
 import { CENTRO, TIPO_ESTOQUE, fmtM3, fmtNum, fmtPct, formatarDia, hojeSP, mesDe, mesesAntes, nomeMes, type Kpis } from "@/lib/producao";
+import { STATUS_EM_ESTOQUE, STATUS_PACOTE } from "@/lib/rastreio";
 import { exigirProducao } from "@/lib/session";
 import type { CentroParada } from "@/generated/prisma/enums";
 
@@ -225,6 +226,67 @@ export default async function PainelProducaoPage({ searchParams }: { searchParam
           </table>
         </div>
         <p className="px-4 py-2 text-xs text-stone-500">Produção, meta e refugo em m³. Índices calculados sobre os totais do mês.</p>
+      </section>
+
+      <section className="cartao mb-6 min-w-0">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-2 font-semibold">
+            <Package className="h-4 w-4 text-marca-600" /> Pacotes e expedição
+          </h2>
+          <Link href="/producao/pacotes" className="text-sm font-medium text-marca-700 hover:underline">
+            Ver pacotes
+          </Link>
+        </div>
+        <dl className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            { r: "Formados no mês", v: fmtNum(p.pacotes.formados), d: fmtM3(p.pacotes.m3Formado, 1) },
+            { r: "Expedidos no mês", v: fmtNum(p.pacotes.expedidos), d: fmtM3(p.pacotes.m3Expedido, 1) },
+            {
+              r: "Rastreados até a floresta",
+              v: p.pacotes.formados ? fmtPct(p.pacotes.rastreados / p.pacotes.formados) : "—",
+              d: `${p.pacotes.rastreados} de ${p.pacotes.formados} pacotes do mês`,
+            },
+            {
+              r: "Tempo até a expedição",
+              v: p.pacotes.diasMedioEmEstoque != null ? `${fmtNum(p.pacotes.diasMedioEmEstoque, 1)} dias` : "—",
+              d: "média, da formação à saída",
+            },
+          ].map((x) => (
+            <div key={x.r} className="min-w-0 rounded-xl bg-stone-50 px-3 py-2">
+              <dt className="truncate text-xs text-stone-500">{x.r}</dt>
+              <dd className="text-lg font-semibold tabular-nums">{x.v}</dd>
+              <dd className="truncate text-xs text-stone-500">{x.d}</dd>
+            </div>
+          ))}
+        </dl>
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
+          <div className="min-w-0">
+            <h3 className="mb-2 text-sm font-semibold text-stone-600">Estoque de pacotes agora</h3>
+            <ul className="space-y-2">
+              {STATUS_EM_ESTOQUE.map((s) => {
+                const e = p.pacotes.estoque[s as "VERDE" | "EM_ESTUFA" | "SECO"];
+                const total = Object.values(p.pacotes.estoque).reduce((a, x) => a + (x?.m3 ?? 0), 0) || 1;
+                return (
+                  <li key={s}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span>{STATUS_PACOTE[s].label}</span>
+                      <span className="tabular-nums">
+                        <b>{fmtNum(e?.qtd ?? 0)}</b> <span className="text-stone-400">· {fmtM3(e?.m3 ?? 0, 1)}</span>
+                      </span>
+                    </div>
+                    <div className="h-2.5 overflow-hidden rounded-full bg-stone-100">
+                      <div className="h-full rounded-full" style={{ width: `${((e?.m3 ?? 0) / total) * 100}%`, background: STATUS_PACOTE[s].hex }} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="min-w-0">
+            <h3 className="mb-2 text-sm font-semibold text-stone-600">Expedido por cliente (m³)</h3>
+            <BarrasHorizontais itens={p.pacotes.porCliente.slice(0, 8).map((c) => ({ rotulo: c.rotulo, valor: Math.round(c.m3 * 10) / 10 }))} vazio="Nenhuma expedição no mês." />
+          </div>
+        </div>
       </section>
 
       <div className="grid gap-4 sm:grid-cols-3">

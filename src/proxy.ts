@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, lerSessao } from "@/lib/jwt";
 
-const ROTAS_PUBLICAS = ["/login"];
+/** O site da empresa e o login são abertos; o resto é o sistema (precisa estar logado). */
+const ROTAS_PUBLICAS = ["/", "/login"];
 
 export default async function proxy(req: NextRequest) {
   const path = req.nextUrl.pathname;
@@ -10,11 +11,11 @@ export default async function proxy(req: NextRequest) {
 
   if (!publica && !sessao) {
     const login = new URL("/login", req.nextUrl);
-    if (path !== "/") login.searchParams.set("next", path + req.nextUrl.search);
+    if (path !== "/sistema") login.searchParams.set("next", path + req.nextUrl.search);
     return NextResponse.redirect(login);
   }
-  if (publica && sessao) {
-    return NextResponse.redirect(new URL("/", req.nextUrl));
+  if (path === "/login" && sessao) {
+    return NextResponse.redirect(new URL("/sistema", req.nextUrl));
   }
   return NextResponse.next();
 }

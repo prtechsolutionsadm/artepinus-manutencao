@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ChevronRight, ClipboardList, ClipboardPen, Flame, House, LayoutDashboard, LayoutGrid, Plus, Search, TreePine, type LucideIcon } from "lucide-react";
+import { CalendarDays, ChevronRight, ClipboardList, Flame, House, LayoutDashboard, LayoutGrid, Package, Plus, QrCode, Search, type LucideIcon } from "lucide-react";
 import { BotaoSair } from "@/components/BotaoSair";
 import { ICONES } from "@/components/icones";
 import { COOKIE_MODULO, iniciais, itemAtivo, moduloDaRota, type GrupoNav } from "@/lib/menu";
@@ -139,7 +139,7 @@ type Aba = { href: string; label: string; Icone: LucideIcon; destaque?: boolean 
 
 const ABAS: Record<Modulo, Aba[]> = {
   manutencao: [
-    { href: "/", label: "Início", Icone: House },
+    { href: "/manutencao", label: "Início", Icone: House },
     { href: "/requisicoes", label: "Requisições", Icone: ClipboardList },
     { href: "/requisicoes/nova", label: "Nova requisição", Icone: Plus, destaque: true },
     { href: "/agenda", label: "Agenda", Icone: CalendarDays },
@@ -147,19 +147,17 @@ const ABAS: Record<Modulo, Aba[]> = {
   ],
   producao: [
     { href: "/producao", label: "Painel", Icone: LayoutDashboard },
-    { href: "/producao/boletins", label: "Boletins", Icone: ClipboardPen },
-    { href: "/producao/boletins/novo", label: "Novo boletim", Icone: Plus, destaque: true },
+    { href: "/producao/pacotes", label: "Pacotes", Icone: Package },
+    { href: "/producao/escanear", label: "Ler QR do pacote", Icone: QrCode, destaque: true },
     { href: "/producao/estufas", label: "Estufas", Icone: Flame },
     { href: "/menu", label: "Mais", Icone: LayoutGrid },
   ],
 };
 
-export function BarraInferior({ menus, salvo, podeLancarProducao }: { menus: Menus; salvo: Modulo | null; podeLancarProducao: boolean }) {
+export function BarraInferior({ menus, salvo }: { menus: Menus; salvo: Modulo | null }) {
   const path = usePathname();
   const modulo = useModulo(menus, salvo);
-  const abas = ABAS[modulo].map((a) =>
-    a.destaque && modulo === "producao" && !podeLancarProducao ? { href: "/producao/toras", label: "Toras", Icone: TreePine } : a,
-  );
+  const abas = ABAS[modulo];
   const foraDasAbas = (menus[modulo] ?? []).flatMap((g) => g.itens).some((i) => !abas.some((a) => a.href === i.href) && itemAtivo(path, i.href));
   return (
     <nav className="nao-imprimir fixed inset-x-0 bottom-0 z-30 border-t border-stone-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
@@ -174,7 +172,7 @@ export function BarraInferior({ menus, salvo, podeLancarProducao }: { menus: Men
                   aria-label={label}
                   className="-mt-5 grid h-14 w-14 place-items-center rounded-2xl bg-marca-600 text-white shadow-lg shadow-marca-700/30 ring-4 ring-white active:scale-95"
                 >
-                  <Plus className="h-6 w-6" strokeWidth={2.5} />
+                  <Icone className="h-6 w-6" strokeWidth={2.5} />
                 </Link>
               </li>
             );

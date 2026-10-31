@@ -55,10 +55,9 @@ export const MANUAL: Secao[] = [
         titulo: "Navegando pelo sistema",
         blocos: [
           { tipo: "lista", itens: [
-            "O sistema tem dois módulos: Manutenção (requisições) e Produção (boletins da serraria, estufas, toras e estoque). Cada pessoa vê os módulos liberados para ela.",
-            "Quem usa os dois troca de módulo pelos botões Manutenção / Produção no alto do menu (no celular, em Mais).",
-            "No computador: o menu fica na lateral esquerda; a busca e o sininho de notificações ficam no topo.",
-            "No celular: use a barra de baixo. Na Manutenção: Início, Requisições, + Nova, Agenda e Mais. Na Produção: Painel, Boletins, + Novo boletim, Estufas e Mais. Em Mais estão as demais telas e o botão Sair.",
+            "O sistema fica atrás do site da empresa: no site, toque em Acessar sistema (ou abra o app instalado).",
+            "No computador: o menu fica na lateral esquerda; o sininho de notificações fica no topo.",
+            "No celular: use a barra de baixo — Painel, Pacotes, o botão do meio para ler o QR de um pacote, Estufas e Mais. Em Mais estão as demais telas e o botão Sair.",
             "A busca do topo encontra requisições pelo número (ex.: 25 ou #00025), título ou código do equipamento.",
           ] },
         ],
@@ -420,6 +419,52 @@ export const MANUAL: Secao[] = [
     ],
   },
   {
+    id: "producao-rastreio",
+    titulo: "Pacotes e QR Code",
+    resumo: "Formar pacotes, imprimir etiquetas, ler o QR e ver a história da madeira",
+    modulo: "producao",
+    topicos: [
+      {
+        titulo: "Como a história do pacote é montada",
+        blocos: [
+          { tipo: "texto", texto: "Cada etapa registrada no sistema liga a madeira à etapa anterior. Quanto mais ligações, mais completa fica a história do pacote:" },
+          { tipo: "passos", itens: [
+            "Florestas e colheitas: cadastre a floresta e registre a colheita (derrubada) do talhão.",
+            "Recebimento de toras: na carga, escolha a colheita de onde vieram as toras.",
+            "Boletim da serraria: em Toras serradas no dia, marque as cargas que foram serradas.",
+            "Ciclo de estufa: em Madeira de quais dias?, marque os dias de serraria cuja madeira entrou na estufa.",
+            "Pacote: ao formar, escolha o ciclo de estufa (pacote seco) ou o dia de serraria (pacote verde).",
+          ] },
+          { tipo: "dica", texto: "A madeira de vários dias e cargas se mistura no processo. Por isso a origem do pacote mostra o conjunto de cargas e colheitas que entraram na produção dele." },
+        ],
+      },
+      {
+        titulo: "Formar pacotes e imprimir etiquetas",
+        blocos: [
+          { tipo: "passos", itens: [
+            "Em Pacotes, toque em Formar pacote (ou use o botão no ciclo de estufa concluído / no boletim do dia).",
+            "Escolha de onde vem a madeira, informe a bitola em mm, as peças, a classe e o local.",
+            "Para vários pacotes iguais, informe a quantidade — cada um ganha o seu código (PCT-000123).",
+            "Toque em Imprimir etiquetas e prenda a etiqueta no pacote.",
+          ] },
+          { tipo: "texto", texto: "Para reimprimir, abra o pacote e toque em Etiqueta, ou selecione vários na lista e toque em Etiquetas." },
+        ],
+      },
+      {
+        titulo: "Ler o QR e registrar o que aconteceu",
+        blocos: [
+          { tipo: "lista", itens: [
+            "Aponte a câmera do celular para a etiqueta, ou toque no botão do meio da barra de baixo (Ler QR). Também dá para digitar o código.",
+            "A tela mostra toda a história: floresta e colheita, cargas de toras, dias de serraria, estufa, formação e expedição.",
+            "Em Registrar: envie um pacote verde para a estufa, registre a expedição (cliente, nota e destino), mude o local ou anote uma observação.",
+            "Quando o ciclo de estufa é concluído, os pacotes que estavam nele passam sozinhos para Seco.",
+            "Para carregar um caminhão: em Pacotes, marque os pacotes e toque em Expedir.",
+          ] },
+        ],
+      },
+    ],
+  },
+  {
     id: "producao-indicadores",
     titulo: "Painel e indicadores de produção",
     resumo: "OEE, disponibilidade, Pareto das paradas e comparativo mensal",
@@ -446,6 +491,7 @@ export const MANUAL: Secao[] = [
             "Produção diária por tipo (bom, aproveitamento e refugo) com a marca da meta de cada dia — toque em Ver tabela para os números.",
             "Paradas por centro (mecânica, elétrica e operacional), o Pareto dos motivos e as paradas por equipamento.",
             "Comparativo mensal com produção, meta, refugo, tempo parado e todos os índices.",
+            "Pacotes e expedição: formados e expedidos no mês, estoque de pacotes, % rastreados até a floresta e tempo médio até a expedição.",
             "Resumo das estufas, das toras recebidas e do último levantamento de estoque.",
             "O botão Excel baixa o mês completo: comparativo, boletins, produção por bitola, paradas e Pareto.",
           ] },

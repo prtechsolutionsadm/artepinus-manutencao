@@ -8,6 +8,8 @@ import { Titulo } from "@/components/ui";
 import { db } from "@/lib/db";
 import { podeProducao } from "@/lib/permissoes";
 import { dateParaDia, fmtNum, formatarDia } from "@/lib/producao";
+import { colheitasParaForm } from "@/lib/rastreio-dados";
+import { codigoCarga, codigoColheita } from "@/lib/rastreio";
 import { exigirProducao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Carga de toras" };
@@ -15,13 +17,13 @@ export const metadata: Metadata = { title: "Carga de toras" };
 export default async function CargaPage({ params }: { params: Promise<{ id: string }> }) {
   const eu = await exigirProducao();
   const { id } = await params;
-  const c = await db.cargaToras.findUnique({ where: { id }, include: { itens: { orderBy: { diametro: "asc" } }, responsavel: { select: { nome: true } } } });
+  const c = await db.cargaToras.findUnique({ where: { id }, include: { itens: { orderBy: { diametro: "asc" } }, responsavel: { select: { nome: true } }, colheita: { include: { origem: { select: { nome: true } } } } } });
   if (!c) notFound();
   const editar = podeProducao(eu, "gerir") || (podeProducao(eu, "lancar") && c.responsavelId === eu.id);
   return (
     <div className="mx-auto max-w-3xl">
       <Titulo
-        subtitulo={`Registrada por ${c.responsavel.nome}`}
+        subtitulo={`${codigoCarga(c.numero)} · registrada por ${c.responsavel.nome}${c.colheita ? ` · colheita ${codigoColheita(c.colheita.numero)} (${c.colheita.origem.nome})` : ""}`}
         acao={
           podeProducao(eu, "gerir") && (
             <BotaoAcao acao={excluirCargaToras} arg={c.id} confirmar="Excluir esta carga?" depois="/producao/toras" className="btn-perigo">
@@ -33,7 +35,7 @@ export default async function CargaPage({ params }: { params: Promise<{ id: stri
         Carga de {c.origem} · {formatarDia(c.data)}
       </Titulo>
       {editar ? (
-        <FormToras inicial={{ ...c, data: dateParaDia(c.data) }} />
+        <FormToras colheitas={await colheitasParaForm(c.colheitaId)} inicial={{ ...c, data: dateParaDia(c.data) }} />
       ) : (
         <section className="cartao">
           <dl className="mb-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">

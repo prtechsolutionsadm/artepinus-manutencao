@@ -41,11 +41,13 @@ export async function exigirUsuario(perfis?: Perfil[]) {
   const usuario = await usuarioAtual();
   if (!usuario) redirect("/login");
   if (usuario.trocarSenha) redirect("/trocar-senha");
-  if (perfis && !perfis.includes(usuario.perfil)) redirect("/");
+  if (perfis && !perfis.includes(usuario.perfil)) redirect("/sistema");
   return usuario;
 }
 
 export type UsuarioAtual = NonNullable<Awaited<ReturnType<typeof usuarioAtual>>>;
+
+const ACOES_GERAIS: Acao[] = ["usuarios", "auditoria"];
 
 /** Página inicial do usuário: o primeiro módulo a que ele tem acesso. */
 export function inicioDe(u: UsuarioAtual) {
@@ -62,7 +64,8 @@ export async function exigirModulo(modulo: Modulo) {
 
 /** Usuário logado com permissão para a ação de manutenção; senão volta para o início. */
 export async function exigirPermissao(acao: Acao) {
-  const usuario = await exigirModulo("manutencao");
+  // Usuários e auditoria valem para o sistema todo; o resto é do módulo de manutenção
+  const usuario = ACOES_GERAIS.includes(acao) ? await exigirUsuario() : await exigirModulo("manutencao");
   if (!pode(usuario.perfil, acao)) redirect(inicioDe(usuario));
   return usuario;
 }

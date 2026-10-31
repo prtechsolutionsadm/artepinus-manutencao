@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { salvarBoletim, type DadosBoletim } from "@/app/actions/producao";
+import { SeletorMultiplo } from "@/components/producao/SeletorMultiplo";
 import { CENTRO, MERCADO, TIPO_PRODUTO, calcularKpis, fmtM3, fmtPct, hojeSP, m3Pecas, mesDe } from "@/lib/producao";
 import { formatarDuracao } from "@/lib/constantes";
 import type { CentroParada, Mercado, TipoProduto } from "@/generated/prisma/enums";
@@ -36,6 +37,7 @@ export type BoletimInicial = {
   observacoes: string | null;
   itens: { tipo: TipoProduto; mercado: Mercado; espessura: number; largura: number; comprimento: number; pecas: number }[];
   paradas: { motivoId: string | null; equipamentoId: string | null; centro: CentroParada; ocorrencias: number; minutos: number; descricao: string | null; requisicaoId: number | null }[];
+  cargaIds: string[];
 };
 
 let seq = 0;
@@ -48,11 +50,13 @@ export function FormBoletim({
   motivos,
   equipamentos,
   metas,
+  cargas,
 }: {
   inicial: BoletimInicial | null;
   motivos: MotivoOpcao[];
   equipamentos: EquipamentoOpcao[];
   metas: Record<string, Meta>;
+  cargas: { id: string; rotulo: string }[];
 }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
@@ -69,6 +73,7 @@ export function FormBoletim({
   const [diametro, setDiametro] = useState(txt(inicial?.diametroMedio));
   const [comprimentoToras, setComprimentoToras] = useState(txt(inicial?.comprimentoMedio));
   const [obs, setObs] = useState(inicial?.observacoes ?? "");
+  const [cargaIds, setCargaIds] = useState<string[]>(inicial?.cargaIds ?? []);
 
   const [itens, setItens] = useState<Item[]>(() =>
     (inicial?.itens ?? []).map((i) => ({
@@ -151,6 +156,7 @@ export function FormBoletim({
       diametroMedio: diametro.replace(",", "."),
       comprimentoMedio: comprimentoToras.replace(",", "."),
       observacoes: obs,
+      cargaIds,
       itens: itens
         .filter((i) => i.espessura || i.largura || i.comprimento || i.pecas)
         .map(({ tipo, mercado, espessura, largura, comprimento, pecas }) => ({ tipo, mercado, espessura, largura, comprimento, pecas })),
@@ -386,6 +392,12 @@ export function FormBoletim({
           >
             <Plus className="h-4 w-4" /> Adicionar parada
           </button>
+        </section>
+
+        <section className="cartao">
+          <h2 className="mb-1 font-semibold">Toras serradas no dia</h2>
+          <p className="mb-3 text-sm text-stone-500">Marque as cargas que foram serradas hoje — é o que liga os pacotes deste dia à floresta de origem.</p>
+          <SeletorMultiplo opcoes={cargas} valor={cargaIds} onChange={setCargaIds} rotulo="Cargas de toras" vazio="Nenhuma carga de toras registrada nos últimos 60 dias." />
         </section>
 
         <section className="cartao">

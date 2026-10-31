@@ -17,7 +17,7 @@ const loginSchema = z.object({
 
 /** Só aceita caminhos internos (evita redirecionar para outro site). */
 function destinoSeguro(next?: string) {
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login") ? next : "/";
+  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login") ? next : "/sistema";
 }
 
 export async function entrar(_: EstadoForm, form: FormData): Promise<EstadoForm> {

@@ -5,14 +5,33 @@ export const EMPRESA = {
   razaoSocial: "Artepinus Indústria e Comércio de Madeiras LTDA",
   cnpj: "76.848.506/0001-17",
   fundacao: "19/08/1983",
-  sistema: "Sistema de Manutenção e Produção",
+  sistema: "Sistema de Produção",
   logo: "/logo.svg",
   logoBranco: "/logo-branco.svg",
   marca: "/marca.svg",
   /** PNG (transparente) para o Excel, que não aceita SVG. */
   logoPng: "/logo.png",
   desenvolvedor: "PR Tech Solutions",
+  /**
+   * Contato mostrado no site. Preencha com os dados reais: o site só mostra o que
+   * estiver preenchido (nada de telefone ou endereço inventado).
+   */
+  contato: {
+    telefone: "",
+    whatsapp: "", // só números com DDI e DDD, ex.: 5541999999999
+    email: "",
+    endereco: "",
+    cidade: "", // ex.: "Cidade – UF"
+    mapa: "", // link do Google Maps
+  },
 };
+
+/** Anos de história, contados da abertura da empresa. */
+export function anosDeHistoria(hoje = new Date()) {
+  const [d, m, a] = EMPRESA.fundacao.split("/").map(Number);
+  const aniversario = hoje.getMonth() + 1 > m || (hoje.getMonth() + 1 === m && hoje.getDate() >= d);
+  return hoje.getFullYear() - a - (aniversario ? 0 : 1);
+}
 
 /** "© 2026 Artepinus Indústria e Comércio de Madeiras LTDA. Todos os direitos reservados." */
 export function direitos(ano = new Date().getFullYear()) {

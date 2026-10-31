@@ -11,6 +11,7 @@ export type CargaInicial = {
   id?: string;
   data: string;
   origem: string;
+  colheitaId: string | null;
   talhao: string | null;
   motorista: string | null;
   placa: string | null;
@@ -23,13 +24,17 @@ let seq = 0;
 const chave = () => ++seq;
 const num = (s: string) => Number(s.replace(",", "."));
 
-export function FormToras({ inicial }: { inicial: CargaInicial }) {
+/** Colheita aberta para escolher na carga: liga a carga à floresta de origem. */
+export type ColheitaOpcao = { id: string; rotulo: string; origem: string; talhao: string | null };
+
+export function FormToras({ inicial, colheitas }: { inicial: CargaInicial; colheitas: ColheitaOpcao[] }) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
   const [f, setF] = useState({
     data: inicial.data,
     origem: inicial.origem,
+    colheitaId: inicial.colheitaId ?? "",
     talhao: inicial.talhao ?? "",
     motorista: inicial.motorista ?? "",
     placa: inicial.placa ?? "",
@@ -67,6 +72,26 @@ export function FormToras({ inicial }: { inicial: CargaInicial }) {
     <form onSubmit={enviar}>
       <fieldset disabled={pendente} className="min-w-0 space-y-6">
         <section className="cartao grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="col-span-2 sm:col-span-3">
+            <label htmlFor="t-col">Colheita (de qual floresta/talhão vieram as toras)</label>
+            <select
+              id="t-col"
+              value={f.colheitaId}
+              onChange={(e) => {
+                const c = colheitas.find((x) => x.id === e.target.value);
+                setF((x) => ({ ...x, colheitaId: e.target.value, ...(c ? { origem: c.origem, talhao: c.talhao ?? x.talhao } : {}) }));
+              }}
+              className="campo"
+            >
+              <option value="">— Sem colheita cadastrada —</option>
+              {colheitas.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.rotulo}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-stone-500">É o que liga o pacote de madeira até a floresta. Cadastre as colheitas em Florestas e colheitas.</p>
+          </div>
           <div>
             <label htmlFor="t-data">Data *</label>
             <input id="t-data" type="date" required max={hojeSP()} value={f.data} onChange={set("data")} className="campo" />

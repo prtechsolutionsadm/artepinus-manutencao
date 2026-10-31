@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Pencil, Trash2, Wrench } from "lucide-react";
+import { PackagePlus, Pencil, Trash2, Wrench } from "lucide-react";
 import { abrirRequisicaoDaParada, excluirBoletim } from "@/app/actions/producao";
 import { BotaoAcao } from "@/components/producao/BotaoAcao";
 import { Badge, Titulo } from "@/components/ui";
@@ -9,6 +9,7 @@ import { formatarData, formatarDuracao, numeroRequisicao } from "@/lib/constante
 import { db } from "@/lib/db";
 import { podeProducao, temModulo } from "@/lib/permissoes";
 import { CENTRO, MERCADO, TIPO_PRODUTO, calcularKpis, fmtM3, fmtNum, fmtPct, formatarDia } from "@/lib/producao";
+import { codigoCarga } from "@/lib/rastreio";
 import { exigirProducao } from "@/lib/session";
 import type { TipoProduto } from "@/generated/prisma/enums";
 
@@ -26,6 +27,9 @@ export default async function BoletimPage({ params }: { params: Promise<{ id: st
         orderBy: { minutos: "desc" },
         include: { motivo: true, equipamento: { select: { nome: true } }, requisicao: { select: { id: true, status: true } } },
       },
+      cargas: { orderBy: { data: "asc" }, include: { itens: { select: { quantidade: true } }, colheita: { include: { origem: { select: { nome: true } } } } } },
+      ciclos: { select: { id: true, numero: true, estufa: { select: { nome: true } } } },
+      pacotes: { select: { numero: true, m3: true, status: true } },
     },
   });
   if (!b) notFound();
@@ -178,6 +182,61 @@ export default async function BoletimPage({ params }: { params: Promise<{ id: st
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="cartao mb-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Rastreabilidade</h2>
+          {podeProducao(eu, "lancar") && (
+            <Link href={`/producao/pacotes/novo?boletim=${b.id}`} className="btn-secundario px-3 py-1.5 text-sm">
+              <PackagePlus className="h-4 w-4" /> Formar pacote verde deste dia
+            </Link>
+          )}
+        </div>
+        <dl className="grid gap-4 text-sm sm:grid-cols-3">
+          <div>
+            <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Toras serradas</dt>
+            {b.cargas.length ? (
+              <dd className="space-y-1">
+                {b.cargas.map((c) => (
+                  <Link key={c.id} href={`/producao/toras/${c.id}`} className="block hover:underline">
+                    <span className="font-mono text-xs text-stone-500">{codigoCarga(c.numero)}</span> {c.colheita?.origem.nome ?? c.origem} ·{" "}
+                    {c.itens.reduce((s, i) => s + i.quantidade, 0)} toras
+                  </Link>
+                ))}
+              </dd>
+            ) : (
+              <dd className="text-stone-500">Nenhuma carga ligada (edite o boletim para marcar).</dd>
+            )}
+          </div>
+          <div>
+            <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Estufas</dt>
+            {b.ciclos.length ? (
+              <dd className="space-y-1">
+                {b.ciclos.map((c) => (
+                  <Link key={c.id} href={`/producao/estufas/ciclos/${c.id}`} className="block hover:underline">
+                    {c.estufa.nome}
+                    {c.numero ? ` · ciclo nº ${c.numero}` : ""}
+                  </Link>
+                ))}
+              </dd>
+            ) : (
+              <dd className="text-stone-500">Madeira ainda não ligada a um ciclo.</dd>
+            )}
+          </div>
+          <div>
+            <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Pacotes verdes</dt>
+            <dd>
+              {b.pacotes.length ? (
+                <Link href={`/producao/pacotes?status=todos&boletim=${b.id}`} className="hover:underline">
+                  {b.pacotes.length} pacote(s) · {fmtM3(b.pacotes.reduce((s, p) => s + p.m3, 0), 2)}
+                </Link>
+              ) : (
+                <span className="text-stone-500">Nenhum.</span>
+              )}
+            </dd>
+          </div>
+        </dl>
       </section>
 
       {b.observacoes && (

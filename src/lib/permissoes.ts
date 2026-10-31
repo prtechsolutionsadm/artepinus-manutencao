@@ -48,14 +48,21 @@ export type Modulo = "manutencao" | "producao";
 export type UsuarioComPerfis = { perfil: Perfil; perfilProducao: PerfilProducao | null };
 
 export const MODULOS: Record<Modulo, { nome: string; inicio: string }> = {
-  manutencao: { nome: "Manutenção", inicio: "/" },
+  manutencao: { nome: "Manutenção", inicio: "/manutencao" },
   producao: { nome: "Produção", inicio: "/producao" },
 };
+
+/**
+ * Módulos ligados no sistema. A manutenção está desligada por enquanto: código e
+ * dados continuam no banco; para religar, inclua "manutencao" aqui.
+ */
+export const MODULOS_ATIVOS: Modulo[] = ["producao"];
 
 /** Admin e Gerente enxergam todos os módulos com acesso total. */
 const GLOBAL: Perfil[] = ["ADMIN", "GERENTE"];
 
 export function temModulo(u: UsuarioComPerfis, m: Modulo) {
+  if (!MODULOS_ATIVOS.includes(m)) return false;
   if (m === "manutencao") return u.perfil !== "SEM_ACESSO";
   return GLOBAL.includes(u.perfil) || u.perfilProducao !== null;
 }

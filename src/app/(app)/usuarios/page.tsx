@@ -6,12 +6,26 @@ import { Badge, Titulo } from "@/components/ui";
 import { PERFIL, PERFIL_PRODUCAO } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { exigirPermissao } from "@/lib/session";
-import { PERFIS_ATRIBUIVEIS } from "@/lib/permissoes";
+import { MODULOS_ATIVOS, PERFIS_ATRIBUIVEIS } from "@/lib/permissoes";
 import type { Perfil, PerfilProducao } from "@/generated/prisma/enums";
 
 export const metadata: Metadata = { title: "Usuários" };
 
 type Usr = { id: string; nome: string; login: string; perfil: Perfil; perfilProducao: PerfilProducao | null; ativo: boolean };
+
+const MANUTENCAO_ATIVA = MODULOS_ATIVOS.includes("manutencao");
+
+/** Com a manutenção desligada, o perfil geral só distingue Gerente (acesso total) dos demais. */
+function opcoesPerfil(atual?: Perfil): { valor: Perfil; rotulo: string }[] {
+  if (atual === "ADMIN") return [{ valor: "ADMIN", rotulo: PERFIL.ADMIN }];
+  if (MANUTENCAO_ATIVA) return PERFIS_ATRIBUIVEIS.map((k) => ({ valor: k, rotulo: PERFIL[k] }));
+  const base: { valor: Perfil; rotulo: string }[] = [
+    { valor: "SEM_ACESSO", rotulo: "Usuário (acesso pelo perfil na Produção)" },
+    { valor: "GERENTE", rotulo: "Gerente (acesso total e usuários)" },
+  ];
+  // Mantém o perfil de manutenção de quem já tinha, para não perder ao salvar
+  return atual && !base.some((b) => b.valor === atual) ? [...base, { valor: atual, rotulo: `${PERFIL[atual]} (manutenção)` }] : base;
+}
 
 function CamposUsuario({ u }: { u?: Usr }) {
   return (
@@ -35,11 +49,11 @@ function CamposUsuario({ u }: { u?: Usr }) {
           />
         </div>
         <div>
-          <label>Perfil na Manutenção</label>
-          <select name="perfil" defaultValue={u?.perfil ?? "OPERADOR"} className="campo">
-            {(u?.perfil === "ADMIN" ? (["ADMIN"] as const) : PERFIS_ATRIBUIVEIS).map((k) => (
-              <option key={k} value={k}>
-                {PERFIL[k]}
+          <label>{MANUTENCAO_ATIVA ? "Perfil na Manutenção" : "Acesso geral"}</label>
+          <select name="perfil" defaultValue={u?.perfil ?? (MANUTENCAO_ATIVA ? "OPERADOR" : "SEM_ACESSO")} className="campo">
+            {opcoesPerfil(u?.perfil).map((o) => (
+              <option key={o.valor} value={o.valor}>
+                {o.rotulo}
               </option>
             ))}
           </select>
@@ -106,7 +120,10 @@ export default async function UsuariosPage() {
               <summary className="flex cursor-pointer list-none flex-wrap items-center gap-2">
                 <span className="font-medium">{u.nome}</span>
                 <span className="font-mono text-sm text-stone-500">{u.login}</span>
-                {u.perfil !== "SEM_ACESSO" && <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">Manutenção · {PERFIL[u.perfil]}</Badge>}
+                {(u.perfil === "ADMIN" || u.perfil === "GERENTE") && <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">{PERFIL[u.perfil]} · acesso total</Badge>}
+                {MANUTENCAO_ATIVA && u.perfil !== "SEM_ACESSO" && u.perfil !== "ADMIN" && u.perfil !== "GERENTE" && (
+                  <Badge cor="bg-marca-50 text-marca-700 ring-marca-100">Manutenção · {PERFIL[u.perfil]}</Badge>
+                )}
                 {u.perfilProducao && u.perfil !== "ADMIN" && u.perfil !== "GERENTE" && (
                   <Badge cor="bg-amber-50 text-amber-800 ring-amber-100">Produção · {PERFIL_PRODUCAO[u.perfilProducao]}</Badge>
                 )}

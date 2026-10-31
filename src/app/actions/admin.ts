@@ -51,7 +51,7 @@ export async function salvarUsuario(_: EstadoForm, form: FormData): Promise<Esta
     return { erro: "Perfil inválido" };
   }
   if (id === eu.id && !resto.ativo) return { erro: "Você não pode desativar o próprio usuário" };
-  if (modulosDe(resto).length === 0) return { erro: "Dê acesso a pelo menos um módulo (Manutenção ou Produção)" };
+  if (modulosDe(resto).length === 0) return { erro: "Escolha o perfil na Produção (ou dê acesso de Gerente)" };
 
   try {
     if (id && existente) {

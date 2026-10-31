@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { auditar, diferencas } from "@/lib/auditoria";
-import { dataLocalParaDate, formatarDuracao } from "@/lib/constantes";
+import { dataLocalParaDate, formatarData, formatarDuracao } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { podeProducao, temModulo } from "@/lib/permissoes";
 import {
@@ -72,6 +72,8 @@ const boletimSchema = z.object({
       }),
     )
     .max(200),
+  /** Cargas de toras serradas no dia (rastreabilidade). */
+  cargaIds: z.array(z.string()).max(60).default([]),
 });
 
 export type DadosBoletim = z.input<typeof boletimSchema>;
@@ -81,7 +83,7 @@ export async function salvarBoletim(entrada: DadosBoletim): Promise<Resultado> {
   if (!ok) return { erro: "Sem permissão para lançar produção" };
   const parse = boletimSchema.safeParse(entrada);
   if (!parse.success) return { erro: parse.error.issues[0].message };
-  const { id, itens, paradas, ...campos } = parse.data;
+  const { id, itens, paradas, cargaIds, ...campos } = parse.data;
   if (campos.data > hojeSP()) return { erro: "A data do boletim não pode ser futura" };
   if (itens.length === 0 && paradas.length === 0) return { erro: "Lance a produção ou as paradas do dia" };
   const minutosParados = paradas.reduce((s, p) => s + p.minutos, 0);
@@ -105,7 +107,7 @@ export async function salvarBoletim(entrada: DadosBoletim): Promise<Resultado> {
       await db.$transaction([
         db.itemProducao.deleteMany({ where: { boletimId: id } }),
         db.paradaProducao.deleteMany({ where: { boletimId: id } }),
-        db.boletimProducao.update({ where: { id }, data: dados }),
+        db.boletimProducao.update({ where: { id }, data: { ...dados, cargas: { set: cargaIds.map((c) => ({ id: c })) } } }),
       ]);
       await auditar({
         usuarioId: eu.id,
@@ -118,7 +120,7 @@ export async function salvarBoletim(entrada: DadosBoletim): Promise<Resultado> {
       revalidatePath("/producao", "layout");
       return { id };
     }
-    const novo = await db.boletimProducao.create({ data: { ...dados, responsavelId: eu.id } });
+    const novo = await db.boletimProducao.create({ data: { ...dados, responsavelId: eu.id, cargas: { connect: cargaIds.map((c) => ({ id: c })) } } });
     await auditar({
       usuarioId: eu.id,
       acao: "boletim.criar",
@@ -308,6 +310,8 @@ const cicloSchema = z.object({
   proximaCarga: opcional(z.string().trim().max(300)),
   observacoes: opcional(z.string().trim().max(2000)),
   cargas: z.array(cargaSchema).min(1, "Informe a madeira que entrou na estufa").max(60),
+  /** Dias de serraria cuja madeira entrou no ciclo (rastreabilidade). */
+  boletimIds: z.array(z.string()).max(60).default([]),
 });
 
 export type DadosCiclo = z.input<typeof cicloSchema>;
@@ -317,7 +321,7 @@ export async function salvarCiclo(entrada: DadosCiclo): Promise<Resultado> {
   if (!ok) return { erro: "Sem permissão" };
   const parse = cicloSchema.safeParse(entrada);
   if (!parse.success) return { erro: parse.error.issues[0].message };
-  const { id, cargas, ...c } = parse.data;
+  const { id, cargas, boletimIds, ...c } = parse.data;
   const dados = {
     ...c,
     entrada: dataLocalParaDate(c.entrada),
@@ -336,7 +340,10 @@ export async function salvarCiclo(entrada: DadosCiclo): Promise<Resultado> {
     if (!antes) return { erro: "Ciclo não encontrado" };
     await db.$transaction([
       db.cargaCiclo.deleteMany({ where: { cicloId: id } }),
-      db.cicloSecagem.update({ where: { id }, data: { ...dados, entrada: dados.entrada, cargas: { create: cargas } } }),
+      db.cicloSecagem.update({
+        where: { id },
+        data: { ...dados, entrada: dados.entrada, cargas: { create: cargas }, boletins: { set: boletimIds.map((b) => ({ id: b })) } },
+      }),
     ]);
     await auditar({ usuarioId: eu.id, acao: "ciclo.editar", entidade: "CicloSecagem", entidadeId: id, resumo: `Editou o ciclo da ${estufa.nome} (${volume} m³)` });
     revalidatePath("/producao", "layout");
@@ -349,6 +356,7 @@ export async function salvarCiclo(entrada: DadosCiclo): Promise<Resultado> {
       entrada: dados.entrada,
       responsavelId: eu.id,
       cargas: { create: cargas },
+      boletins: { connect: boletimIds.map((b) => ({ id: b })) },
       checklist: { create: CHECKLIST_ESTUFA.flatMap((s) => s.itens.map((texto) => ({ secao: s.secao, texto, ordem: ordem++ }))) },
     },
   });
@@ -393,10 +401,23 @@ export async function concluirCiclo(_: EstadoForm, form: FormData): Promise<Esta
   const ciclo = await db.cicloSecagem.findUnique({ where: { id }, include: { estufa: true } });
   if (!ciclo || ciclo.status !== "EM_SECAGEM") return { erro: "Ciclo não está em secagem" };
   if (!saida || saida < ciclo.entrada) return { erro: "A saída precisa ser depois da entrada" };
-  await db.cicloSecagem.update({
-    where: { id },
-    data: { status: "CONCLUIDO", saida, umidadeFinal, ...(observacoes ? { observacoes } : {}) },
-  });
+  const naEstufa = await db.pacote.findMany({ where: { cicloId: id, status: "EM_ESTUFA" }, select: { id: true } });
+  await db.$transaction([
+    db.cicloSecagem.update({
+      where: { id },
+      data: { status: "CONCLUIDO", saida, umidadeFinal, ...(observacoes ? { observacoes } : {}) },
+    }),
+    // Pacotes que estavam nesta estufa saem secos
+    db.pacote.updateMany({ where: { id: { in: naEstufa.map((p) => p.id) } }, data: { status: "SECO", ...(umidadeFinal != null ? { umidade: umidadeFinal } : {}) } }),
+    db.eventoPacote.createMany({
+      data: naEstufa.map((p) => ({
+        pacoteId: p.id,
+        tipo: "SAIDA_ESTUFA" as const,
+        descricao: `Saiu seco da ${ciclo.estufa.nome} em ${formatarData(saida, true)}${umidadeFinal != null ? ` com ${umidadeFinal}% de umidade` : ""}`,
+        usuarioId: eu.id,
+      })),
+    }),
+  ]);
   await auditar({ usuarioId: eu.id, acao: "ciclo.concluir", entidade: "CicloSecagem", entidadeId: id, resumo: `Concluiu o ciclo da ${ciclo.estufa.nome}` });
   revalidatePath("/producao", "layout");
   return { ok: "Ciclo concluído" };
@@ -407,7 +428,15 @@ export async function cancelarCiclo(id: string): Promise<Resultado> {
   if (!ok) return { erro: "Sem permissão" };
   const ciclo = await db.cicloSecagem.findUnique({ where: { id }, include: { estufa: true } });
   if (!ciclo || ciclo.status !== "EM_SECAGEM") return { erro: "Ciclo não está em secagem" };
-  await db.cicloSecagem.update({ where: { id }, data: { status: "CANCELADO" } });
+  const naEstufa = await db.pacote.findMany({ where: { cicloId: id, status: "EM_ESTUFA" }, select: { id: true } });
+  await db.$transaction([
+    db.cicloSecagem.update({ where: { id }, data: { status: "CANCELADO" } }),
+    // Pacotes voltam a verde e saem do ciclo cancelado
+    db.pacote.updateMany({ where: { id: { in: naEstufa.map((p) => p.id) } }, data: { status: "VERDE", cicloId: null } }),
+    db.eventoPacote.createMany({
+      data: naEstufa.map((p) => ({ pacoteId: p.id, tipo: "MOVIMENTADO" as const, descricao: `Ciclo da ${ciclo.estufa.nome} cancelado: pacote voltou a verde`, usuarioId: eu.id })),
+    }),
+  ]);
   await auditar({ usuarioId: eu.id, acao: "ciclo.cancelar", entidade: "CicloSecagem", entidadeId: id, resumo: `Cancelou o ciclo da ${ciclo.estufa.nome}` });
   revalidatePath("/producao", "layout");
   return {};
@@ -419,6 +448,7 @@ const cargaTorasSchema = z.object({
   id: opcional(z.string()),
   data: dia,
   origem: z.string().trim().min(2, "Informe a origem/fornecedor").max(120),
+  colheitaId: opcional(z.string()),
   talhao: opcional(z.string().trim().max(60)),
   motorista: opcional(z.string().trim().max(80)),
   placa: opcional(z.string().trim().toUpperCase().max(10)),

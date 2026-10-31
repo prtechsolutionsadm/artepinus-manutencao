@@ -104,6 +104,35 @@ export async function painelProducao(mes: string, mesesComparar = 6) {
     { cargas: 0, quantidade: 0, m3: 0, somaDiametro: 0 },
   );
 
+  // Pacotes (rastreabilidade): formados e expedidos no mês, estoque atual
+  const temColheita = (b: { cargas: { colheitaId: string | null }[] } | null | undefined) => !!b?.cargas.some((c) => c.colheitaId);
+  const [formados, expedidos, emEstoque] = await Promise.all([
+    db.pacote.findMany({
+      where: { criadoEm: intervaloMesSP(mes), status: { not: "CANCELADO" } },
+      select: {
+        m3: true,
+        boletim: { select: { cargas: { select: { colheitaId: true } } } },
+        ciclo: { select: { boletins: { select: { cargas: { select: { colheitaId: true } } } } } },
+      },
+    }),
+    db.pacote.findMany({ where: { status: "EXPEDIDO", expedidoEm: intervaloMesSP(mes) }, select: { m3: true, criadoEm: true, expedidoEm: true, cliente: true } }),
+    db.pacote.groupBy({ by: ["status"], where: { status: { in: ["VERDE", "EM_ESTUFA", "SECO"] } }, _count: true, _sum: { m3: true } }),
+  ]);
+  const rastreados = formados.filter((p) => temColheita(p.boletim) || !!p.ciclo?.boletins.some(temColheita)).length;
+  const diasEmEstoque = expedidos.map((p) => (p.expedidoEm!.getTime() - p.criadoEm.getTime()) / 864e5);
+  const porCliente = new Map<string, number>();
+  for (const p of expedidos) porCliente.set(p.cliente ?? "—", (porCliente.get(p.cliente ?? "—") ?? 0) + p.m3);
+  const pacotes = {
+    formados: formados.length,
+    m3Formado: formados.reduce((s, p) => s + p.m3, 0),
+    expedidos: expedidos.length,
+    m3Expedido: expedidos.reduce((s, p) => s + p.m3, 0),
+    rastreados,
+    diasMedioEmEstoque: diasEmEstoque.length ? diasEmEstoque.reduce((a, b) => a + b, 0) / diasEmEstoque.length : null,
+    estoque: Object.fromEntries(emEstoque.map((e) => [e.status, { qtd: e._count, m3: e._sum.m3 ?? 0 }])) as Partial<Record<"VERDE" | "EM_ESTUFA" | "SECO", { qtd: number; m3: number }>>,
+    porCliente: [...porCliente].map(([rotulo, m3]) => ({ rotulo, m3 })).sort((a, b) => b.m3 - a.m3),
+  };
+
   const estoque = ultimos.map((l) => (l ? { tipo: l.tipo, data: l.data, m3: l.itens.reduce((s, i) => s + i.m3, 0) } : null));
 
   return {
@@ -116,5 +145,12 @@ export async function painelProducao(mes: string, mesesComparar = 6) {
     estufas,
     toras: { ...toras, diametroMedio: toras.quantidade ? toras.somaDiametro / toras.quantidade : null },
     estoque,
+    pacotes,
   };
+}
+
+/** Mês no horário de Brasília para colunas DateTime (criação/expedição de pacotes). */
+function intervaloMesSP(mes: string) {
+  const { gte, lt } = intervaloMes(mes);
+  return { gte: new Date(gte.getTime() + 3 * 3600e3), lt: new Date(lt.getTime() + 3 * 3600e3) };
 }

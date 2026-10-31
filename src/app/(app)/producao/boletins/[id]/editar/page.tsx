@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { podeProducao } from "@/lib/permissoes";
 import { dateParaDia, formatarDia } from "@/lib/producao";
 import { opcoesBoletim } from "@/lib/producao-dados";
+import { cargasParaForm } from "@/lib/rastreio-dados";
 import { exigirProducao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Editar boletim" };
@@ -13,14 +14,14 @@ export const metadata: Metadata = { title: "Editar boletim" };
 export default async function EditarBoletimPage({ params }: { params: Promise<{ id: string }> }) {
   const eu = await exigirProducao("lancar");
   const { id } = await params;
-  const b = await db.boletimProducao.findUnique({ where: { id }, include: { itens: true, paradas: true } });
+  const b = await db.boletimProducao.findUnique({ where: { id }, include: { itens: true, paradas: true, cargas: { select: { id: true } } } });
   if (!b) notFound();
   if (b.responsavelId !== eu.id && !podeProducao(eu, "gerir")) redirect(`/producao/boletins/${id}`);
   const opcoes = await opcoesBoletim();
   return (
     <div className="mx-auto max-w-4xl">
       <Titulo>Editar boletim de {formatarDia(b.data)}</Titulo>
-      <FormBoletim inicial={{ ...b, data: dateParaDia(b.data) }} {...opcoes} />
+      <FormBoletim inicial={{ ...b, data: dateParaDia(b.data), cargaIds: b.cargas.map((c) => c.id) }} {...opcoes} cargas={await cargasParaForm(b.cargas.map((c) => c.id))} />
     </div>
   );
 }

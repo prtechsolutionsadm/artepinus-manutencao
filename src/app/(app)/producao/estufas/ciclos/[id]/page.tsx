@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Ban, Pencil } from "lucide-react";
+import { Ban, PackagePlus, Pencil } from "lucide-react";
 import { cancelarCiclo, concluirCiclo } from "@/app/actions/producao";
 import { ActionForm, BotaoEnviar } from "@/components/ActionForm";
 import { BotaoAcao } from "@/components/producao/BotaoAcao";
@@ -15,7 +15,7 @@ import {
 } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { podeProducao } from "@/lib/permissoes";
-import { ACLIMATACAO_HORAS, STATUS_CICLO, fmtM3, fmtNum } from "@/lib/producao";
+import { ACLIMATACAO_HORAS, STATUS_CICLO, fmtM3, fmtNum, formatarDia } from "@/lib/producao";
 import { exigirProducao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Ciclo de secagem" };
@@ -37,6 +37,8 @@ export default async function CicloPage({
         orderBy: { ordem: "asc" },
         include: { marcadoPor: { select: { nome: true } } },
       },
+      boletins: { orderBy: { data: "asc" }, select: { id: true, data: true } },
+      pacotes: { select: { numero: true, m3: true, status: true } },
     },
   });
   if (!c) notFound();
@@ -119,6 +121,46 @@ export default async function CicloPage({
           </div>
         ))}
       </dl>
+
+      <section className="cartao mb-6">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-semibold">Rastreabilidade</h2>
+          {lancar && c.status === "CONCLUIDO" && (
+            <Link href={`/producao/pacotes/novo?ciclo=${c.id}`} className="btn-primario px-3 py-1.5 text-sm">
+              <PackagePlus className="h-4 w-4" /> Formar pacotes secos deste ciclo
+            </Link>
+          )}
+        </div>
+        <dl className="grid gap-4 text-sm sm:grid-cols-2">
+          <div>
+            <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Madeira serrada em</dt>
+            <dd className="flex flex-wrap gap-1.5">
+              {c.boletins.length ? (
+                c.boletins.map((b) => (
+                  <Link key={b.id} href={`/producao/boletins/${b.id}`} className="rounded-full bg-stone-100 px-2.5 py-0.5 hover:bg-stone-200">
+                    {formatarDia(b.data, { day: "2-digit", month: "2-digit" })}
+                  </Link>
+                ))
+              ) : (
+                <span className="text-stone-500">Nenhum dia ligado{ativo && lancar ? " — edite o ciclo para marcar" : ""}.</span>
+              )}
+            </dd>
+          </div>
+          <div>
+            <dt className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500">Pacotes</dt>
+            <dd>
+              {c.pacotes.length ? (
+                <Link href={`/producao/pacotes?status=todos&ciclo=${c.id}`} className="hover:underline">
+                  {c.pacotes.length} pacote(s) · {fmtM3(c.pacotes.reduce((s, p) => s + p.m3, 0), 2)}
+                  {c.pacotes.some((p) => p.status === "EM_ESTUFA") && ` · ${c.pacotes.filter((p) => p.status === "EM_ESTUFA").length} na estufa`}
+                </Link>
+              ) : (
+                <span className="text-stone-500">Nenhum pacote ligado.</span>
+              )}
+            </dd>
+          </div>
+        </dl>
+      </section>
 
       {liberada && c.status === "CONCLUIDO" && (
         <p className="mb-6 rounded-xl bg-sky-50 px-4 py-3 text-sm text-sky-900 ring-1 ring-sky-200">

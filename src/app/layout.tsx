@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: { default: "Artepinus", template: "%s · Artepinus" },
-  description: "Manutenção e produção da Artepinus",
+  description: "Artepinus: madeira serrada de pinus e sistema de produção",
   applicationName: "Artepinus",
   authors: [{ name: "PR Tech Solutions" }],
   creator: "PR Tech Solutions",

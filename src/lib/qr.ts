@@ -19,3 +19,8 @@ export async function linkEquipamento(codigo: string) {
 export async function qrSvg(texto: string) {
   return QRCode.toString(texto, { type: "svg", errorCorrectionLevel: "M", margin: 1, color: { dark: "#1c1917", light: "#ffffff" } });
 }
+
+/** Link do QR da etiqueta do pacote (curto, para o QR ficar fácil de ler). */
+export async function linkPacote(numero: number) {
+  return `${await urlBase()}/p/${numero}`;
+}

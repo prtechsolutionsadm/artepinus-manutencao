@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Copy, Plus, Trash2 } from "lucide-react";
 import { salvarCiclo } from "@/app/actions/producao";
+import { SeletorMultiplo } from "@/components/producao/SeletorMultiplo";
 import { fmtM3 } from "@/lib/producao";
 
 type Carga = { k: number; espessura: string; largura: string; comprimento: string; grades: string; m3: string };
@@ -19,6 +20,7 @@ export type CicloInicial = {
   proximaCarga: string | null;
   observacoes: string | null;
   cargas: { espessura: number; largura: string; comprimento: number; grades: number; m3: number }[];
+  boletimIds: string[];
 };
 
 let seq = 0;
@@ -26,7 +28,15 @@ const chave = () => ++seq;
 const num = (s: string) => Number(s.replace(",", "."));
 const txt = (v: number | string | null | undefined) => (v == null ? "" : String(v));
 
-export function FormCiclo({ inicial, estufas }: { inicial: CicloInicial; estufas: { id: string; nome: string; ocupada: boolean }[] }) {
+export function FormCiclo({
+  inicial,
+  estufas,
+  boletins,
+}: {
+  inicial: CicloInicial;
+  estufas: { id: string; nome: string; ocupada: boolean }[];
+  boletins: { id: string; rotulo: string }[];
+}) {
   const router = useRouter();
   const [pendente, iniciar] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
@@ -45,6 +55,7 @@ export function FormCiclo({ inicial, estufas }: { inicial: CicloInicial; estufas
       ? inicial.cargas.map((c) => ({ k: chave(), espessura: String(c.espessura), largura: c.largura, comprimento: String(c.comprimento), grades: String(c.grades), m3: String(c.m3) }))
       : [{ k: chave(), espessura: "", largura: "", comprimento: "", grades: "", m3: "" }],
   );
+  const [boletimIds, setBoletimIds] = useState<string[]>(inicial.boletimIds);
   const total = cargas.reduce((s, c) => s + (num(c.m3) || 0), 0);
   const set = (campo: keyof typeof f) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => setF((x) => ({ ...x, [campo]: e.target.value }));
   const mudar = (k: number, campo: keyof Carga, v: string) => setCargas((l) => l.map((c) => (c.k === k ? { ...c, [campo]: v } : c)));
@@ -57,6 +68,7 @@ export function FormCiclo({ inicial, estufas }: { inicial: CicloInicial; estufas
         id: inicial.id ?? null,
         ...f,
         umidadeInicial: f.umidadeInicial.replace(",", "."),
+        boletimIds,
         cargas: cargas
           .filter((c) => c.espessura || c.m3 || c.grades)
           .map((c) => ({ espessura: c.espessura, largura: c.largura, comprimento: c.comprimento.replace(",", "."), grades: c.grades, m3: c.m3.replace(",", ".") })),
@@ -151,6 +163,12 @@ export function FormCiclo({ inicial, estufas }: { inicial: CicloInicial; estufas
           <button type="button" onClick={() => setCargas((l) => [...l, { k: chave(), espessura: "", largura: "", comprimento: "", grades: "", m3: "" }])} className="btn-secundario mt-3">
             <Plus className="h-4 w-4" /> Adicionar bitola
           </button>
+        </section>
+
+        <section className="cartao">
+          <h2 className="mb-1 font-semibold">Madeira de quais dias?</h2>
+          <p className="mb-3 text-sm text-stone-500">Marque os dias de serraria cuja madeira entrou nesta estufa — liga os pacotes secos ao dia em que foram serrados e às toras.</p>
+          <SeletorMultiplo opcoes={boletins} valor={boletimIds} onChange={setBoletimIds} rotulo="Boletins da serraria" vazio="Nenhum boletim lançado nos últimos 30 dias." />
         </section>
 
         <section className="cartao grid gap-3 sm:grid-cols-2">

@@ -26,7 +26,7 @@ export async function criarRequisicao(form: FormData): Promise<ResultadoNova> {
   try {
     const req = await criarRequisicaoCompleta(eu, dados.data, fotosDoForm(form), "online");
     revalidatePath("/requisicoes");
-    revalidatePath("/");
+    revalidatePath("/manutencao");
     return { id: req.id };
   } catch (e) {
     return { erro: e instanceof Error && e.message.includes("imagem") ? e.message : "Não foi possível salvar as fotos. Tente novamente." };
@@ -171,7 +171,7 @@ export async function atualizarStatus(_: EstadoForm, form: FormData): Promise<Es
 
   revalidatePath(`/requisicoes/${id}`);
   revalidatePath("/requisicoes");
-  revalidatePath("/");
+  revalidatePath("/manutencao");
   return { ok: mudouStatus ? `Status alterado para "${STATUS[status].label}"` : "Requisição atualizada" };
 }
 

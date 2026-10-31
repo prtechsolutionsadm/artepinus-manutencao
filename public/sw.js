@@ -1,12 +1,12 @@
 // Service worker do PWA.
 // - Arquivos estáticos: cache-first.
-// - Páginas: rede primeiro. As páginas usadas sem internet ("/" e "/requisicoes/nova") ficam
+// - Páginas: rede primeiro. A página usada sem internet ("/requisicoes/nova") fica
 //   guardadas para abrir offline; as demais mostram a tela "sem conexão".
 // - Push: mostra a notificação e abre a página ao tocar.
-const ESTATICO = "artepinus-estatico-v4";
-const PAGINAS = "artepinus-paginas-v1";
+const ESTATICO = "artepinus-estatico-v5";
+const PAGINAS = "artepinus-paginas-v2";
 const OFFLINE = "/offline.html";
-const PAGINAS_OFFLINE = ["/", "/requisicoes/nova"];
+const PAGINAS_OFFLINE = ["/requisicoes/nova"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(ESTATICO).then((c) => c.addAll([OFFLINE, "/logo.svg", "/icons/icon-192.png"])));

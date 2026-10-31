@@ -4,7 +4,10 @@ import {
   ClipboardPen,
   Flame,
   LayoutDashboard,
+  Package,
+  QrCode,
   Settings2,
+  Trees,
   TreePine,
   Bell,
   Building2,
@@ -46,4 +49,7 @@ export const ICONES: Record<IconeMenu, LucideIcon> = {
   toras: TreePine,
   estoque: Boxes,
   cadastrosProducao: Settings2,
+  pacotes: Package,
+  escanear: QrCode,
+  florestas: Trees,
 };

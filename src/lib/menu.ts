@@ -21,7 +21,10 @@ export type IconeMenu =
   | "estufas"
   | "toras"
   | "estoque"
-  | "cadastrosProducao";
+  | "cadastrosProducao"
+  | "pacotes"
+  | "escanear"
+  | "florestas";
 
 export type ItemNav = { href: string; label: string; icone: IconeMenu };
 export type GrupoNav = { titulo: string; itens: ItemNav[] };
@@ -42,7 +45,7 @@ function menuManutencao(u: UsuarioComPerfis): GrupoNav[] {
     {
       titulo: "Manutenção",
       itens: [
-        { href: "/", label: "Início", icone: "inicio" },
+        { href: "/manutencao", label: "Início", icone: "inicio" },
         { href: "/requisicoes", label: "Requisições", icone: "requisicoes" },
         { href: "/agenda", label: "Agenda", icone: "agenda" },
       ],
@@ -78,8 +81,16 @@ function menuProducao(u: UsuarioComPerfis): GrupoNav[] {
         { href: "/producao", label: "Painel", icone: "painel" },
         { href: "/producao/boletins", label: "Boletins da serraria", icone: "boletins" },
         { href: "/producao/estufas", label: "Estufas", icone: "estufas" },
-        { href: "/producao/toras", label: "Recebimento de toras", icone: "toras" },
         { href: "/producao/estoque", label: "Estoque de madeira", icone: "estoque" },
+      ],
+    },
+    {
+      titulo: "Rastreabilidade",
+      itens: [
+        { href: "/producao/pacotes", label: "Pacotes", icone: "pacotes" },
+        { href: "/producao/escanear", label: "Ler QR do pacote", icone: "escanear" },
+        { href: "/producao/florestas", label: "Florestas e colheitas", icone: "florestas" },
+        { href: "/producao/toras", label: "Recebimento de toras", icone: "toras" },
       ],
     },
     {
@@ -120,7 +131,7 @@ export function moduloDaRota(path: string): Modulo | null {
 
 /** Item ativo: "/" só na raiz; os demais pelo prefixo, sem confundir /requisicoes com /requisicoes/nova. */
 export function itemAtivo(path: string, href: string) {
-  if (href === "/" || href === "/producao") return path === href;
+  if (href === "/manutencao" || href === "/producao") return path === href;
   if (href === "/producao/boletins" && path.startsWith("/producao/boletins/novo")) return false;
   if (href === "/requisicoes" && path.startsWith("/requisicoes/nova")) return false;
   return path === href || path.startsWith(href + "/");

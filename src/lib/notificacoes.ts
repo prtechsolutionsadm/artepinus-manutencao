@@ -37,7 +37,7 @@ export async function notificar(usuarioIds: (string | null | undefined)[], aviso
 
   if (!pushDisponivel()) return;
   const inscricoes = await db.inscricaoPush.findMany({ where: { usuarioId: { in: ids } } });
-  const payload = JSON.stringify({ titulo: aviso.titulo, mensagem: aviso.mensagem, link: aviso.link ?? "/" });
+  const payload = JSON.stringify({ titulo: aviso.titulo, mensagem: aviso.mensagem, link: aviso.link ?? "/sistema" });
 
   await Promise.all(
     inscricoes.map(async (i) => {

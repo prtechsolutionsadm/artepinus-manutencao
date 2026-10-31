@@ -3,6 +3,7 @@ import { FormCiclo } from "@/components/producao/FormCiclo";
 import { Titulo } from "@/components/ui";
 import { dateParaDataLocal } from "@/lib/constantes";
 import { estufasParaForm } from "@/lib/producao-estufas";
+import { boletinsParaForm } from "@/lib/rastreio-dados";
 import { exigirProducao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Iniciar ciclo de secagem" };
@@ -27,7 +28,9 @@ export default async function NovoCicloPage({ searchParams }: { searchParams: Pr
           proximaCarga: null,
           observacoes: null,
           cargas: [],
+          boletimIds: [],
         }}
+        boletins={await boletinsParaForm()}
       />
     </div>
   );

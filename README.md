@@ -1,10 +1,31 @@
-# Artepinus · Manutenção e Produção
+# Artepinus · Site e sistema de produção
 
-Sistema web (PWA) da Artepinus em módulos, substituindo o papel e as planilhas:
+- **Site institucional** público em `/` (`src/app/(site)`): empresa, processo, produtos, rastreabilidade
+  e contato, com o botão **Acessar sistema** (`/sistema` → login → módulo do usuário).
+  Contatos (telefone, WhatsApp, e-mail, endereço) ficam em `src/lib/empresa.ts` — o site só mostra o que
+  estiver preenchido.
+- **Sistema (PWA)** em módulos:
+  - **Produção** — boletim diário da serraria, estufas, toras, estoque, indicadores (OEE) e
+    **rastreabilidade dos pacotes com QR Code**, da floresta à expedição.
+  - **Manutenção** — requisições de manutenção. **Desligada por enquanto** (`MODULOS_ATIVOS` em
+    `src/lib/permissoes.ts`): código e dados continuam, só some do menu e do acesso.
 
-- **Manutenção** — abrir, acompanhar e manter o histórico das requisições de manutenção.
-- **Produção** — boletim diário da serraria (produção e paradas), estufas, recebimento de toras,
-  estoque de madeira e indicadores (OEE) com comparativos mensais.
+## Rastreabilidade (da floresta ao pacote)
+
+```
+Floresta → Colheita (COL-0001) → Carga de toras (CT-00001) → Boletim do dia ⇄ Ciclo de estufa → Pacote (PCT-000001) → Expedição
+```
+
+- Cada ligação é registrada onde a coisa acontece: a carga escolhe a colheita; o boletim marca as cargas
+  serradas no dia; o ciclo marca os dias de serraria cuja madeira entrou na estufa; o pacote nasce de um
+  ciclo (seco) ou de um dia (verde). A origem é por lote: a madeira se mistura, então o pacote mostra
+  o conjunto de cargas/colheitas que entraram na sua produção (`src/lib/rastreio-dados.ts`).
+- Etiqueta A4 (8 por folha) com QR para `/p/<número>` → `/producao/pacotes/<número>`: a história
+  completa e as ações (enviar para estufa, expedir, mover, observação). Cada ação vira um
+  `EventoPacote`. Ao concluir um ciclo, os pacotes que estavam nele passam a Seco.
+- `/producao/escanear` lê o QR pela câmera (BarcodeDetector) ou pelo código digitado.
+- Painel: pacotes formados/expedidos, estoque por situação, % rastreado até a floresta e tempo até a
+  expedição.
 
 **Stack:** Next.js 16 (Node.js) · Prisma ORM 7 · Prisma Postgres · Tailwind CSS 4 · hospedagem na Vercel.
 

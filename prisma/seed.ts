@@ -40,6 +40,7 @@ async function main() {
   if (process.env.SEED_DEMO === "1") {
     await demo();
     await demoProducao();
+    await demoRastreio();
   }
 }
 
@@ -249,6 +250,124 @@ async function demoProducao() {
     },
   });
   console.log("Produção de demonstração criada (login carlos.encarregado, senha teste123)");
+}
+
+/** Florestas, colheitas, cargas ligadas aos boletins, ciclos e pacotes (só com SEED_DEMO=1). */
+async function demoRastreio() {
+  if ((await db.pacote.count()) > 0) return;
+  const enc = await db.usuario.findUniqueOrThrow({ where: { login: "carlos.encarregado" } });
+  const DIA = 864e5;
+  const diaUTC = (n: number) => {
+    const h = new Date(Date.now() - 3 * 3600e3);
+    return new Date(Date.UTC(h.getUTCFullYear(), h.getUTCMonth(), h.getUTCDate() - n));
+  };
+  const f1 = await db.origemFlorestal.create({
+    data: { nome: "Fazenda Santa Rita", tipo: "TERCEIRO", proprietario: "Reflorestadora Exemplo", municipio: "Cidade Exemplo", uf: "PR", especie: "Pinus taeda", anoPlantio: 2004, areaHa: 320 },
+  });
+  const f2 = await db.origemFlorestal.create({ data: { nome: "Floresta Própria – Área 2", tipo: "PROPRIA", especie: "Pinus elliottii", anoPlantio: 2006, areaHa: 85 } });
+  const col = [
+    await db.colheita.create({ data: { origemId: f1.id, talhao: "12B", inicio: diaUTC(60), fim: diaUTC(25), idadeAnos: 21, equipe: "Equipe de corte 1", responsavelId: enc.id } }),
+    await db.colheita.create({ data: { origemId: f2.id, talhao: "3", inicio: diaUTC(24), idadeAnos: 19, equipe: "Equipe de corte 2", responsavelId: enc.id } }),
+  ];
+  // Uma carga a cada 3 dias, ligada à colheita do período
+  const cargas = [];
+  for (let n = 46; n >= 1; n -= 3) {
+    const c = n > 24 ? col[0] : col[1];
+    const o = n > 24 ? f1 : f2;
+    cargas.push(
+      await db.cargaToras.create({
+        data: {
+          data: diaUTC(n),
+          origem: o.nome,
+          talhao: c.talhao,
+          colheitaId: c.id,
+          placa: n % 2 ? "ABC1D23" : "XYZ9K87",
+          comprimentoMedio: 3,
+          responsavelId: enc.id,
+          itens: { create: [18, 22, 26, 30].map((diametro, i) => ({ diametro, quantidade: [30, 55, 40, 15][i] })) },
+        },
+      }),
+    );
+  }
+  // Cada boletim serrou as cargas recebidas nos 3 dias anteriores
+  const boletins = await db.boletimProducao.findMany({ orderBy: { data: "asc" } });
+  for (const b of boletins) {
+    const usadas = cargas.filter((c) => c.data <= b.data && c.data.getTime() > b.data.getTime() - 3 * DIA);
+    if (usadas.length) await db.boletimProducao.update({ where: { id: b.id }, data: { cargas: { connect: usadas.map((c) => ({ id: c.id })) } } });
+  }
+  // Ciclos de estufa concluídos com a madeira de 3 dias cada, e pacotes secos
+  const estufas = await db.estufa.findMany({ orderBy: { numero: "asc" } });
+  let numeroCiclo = 400;
+  for (let i = 0; i + 3 <= boletins.length - 4; i += 3) {
+    const dias = boletins.slice(i, i + 3);
+    const entrada = new Date(dias[2].data.getTime() + 20 * 3600e3);
+    const saida = new Date(entrada.getTime() + 96 * 3600e3);
+    if (saida > new Date()) break;
+    const ciclo = await db.cicloSecagem.create({
+      data: {
+        estufaId: estufas[(i / 3) % estufas.length].id,
+        numero: numeroCiclo++,
+        status: "CONCLUIDO",
+        entrada,
+        previsaoSaida: saida,
+        saida,
+        umidadeInicial: 58,
+        umidadeFinal: 12,
+        responsavelId: enc.id,
+        cargas: { create: [{ espessura: 25, largura: "100-125", comprimento: 3, grades: 20, m3: 48 }] },
+        boletins: { connect: dias.map((d) => ({ id: d.id })) },
+      },
+    });
+    for (let k = 0; k < 4; k++) {
+      const [e, l, c, pecas] = k % 2 ? [25, 125, 3000, 448] : [25, 100, 3000, 560];
+      const expedido = i < 9 && k < 3;
+      const criadoEm = new Date(saida.getTime() + 2 * 3600e3);
+      await db.pacote.create({
+        data: {
+          status: expedido ? "EXPEDIDO" : "SECO",
+          cicloId: ciclo.id,
+          espessura: e,
+          largura: l,
+          comprimento: c,
+          pecas,
+          m3: (e * l * c * pecas) / 1e9,
+          classe: k === 3 ? "2ª" : "1ª",
+          mercado: "EXTERNO",
+          umidade: 12,
+          localizacao: "Galpão 1",
+          criadoPorId: enc.id,
+          criadoEm,
+          ...(expedido ? { cliente: "Cliente Exemplo Ltda", notaFiscal: `${1200 + i * 4 + k}`, destino: "Porto de Paranaguá", expedidoEm: new Date(criadoEm.getTime() + 5 * DIA) } : {}),
+          eventos: {
+            create: [
+              { tipo: "CRIADO", descricao: `Formado com a madeira seca do ciclo nº ${ciclo.numero}`, usuarioId: enc.id, criadoEm },
+              ...(expedido
+                ? [{ tipo: "EXPEDIDO" as const, descricao: "Expedido para Cliente Exemplo Ltda", usuarioId: enc.id, criadoEm: new Date(criadoEm.getTime() + 5 * DIA) }]
+                : []),
+            ],
+          },
+        },
+      });
+    }
+  }
+  // Pacotes verdes dos últimos dias
+  for (const b of boletins.slice(-2)) {
+    await db.pacote.create({
+      data: {
+        status: "VERDE",
+        boletimId: b.id,
+        espessura: 32,
+        largura: 150,
+        comprimento: 2700,
+        pecas: 300,
+        m3: (32 * 150 * 2700 * 300) / 1e9,
+        localizacao: "Pátio",
+        criadoPorId: enc.id,
+        eventos: { create: { tipo: "CRIADO", descricao: "Formado verde com a madeira serrada no dia", usuarioId: enc.id } },
+      },
+    });
+  }
+  console.log("Rastreabilidade de demonstração criada (florestas, colheitas, cargas, ciclos e pacotes)");
 }
 
 main()

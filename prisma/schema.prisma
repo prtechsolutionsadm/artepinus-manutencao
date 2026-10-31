@@ -81,6 +81,9 @@ model Usuario {
   itensCicloMarcados    ItemChecklistCiclo[]
   cargasToras           CargaToras[]
   levantamentosEstoque  LevantamentoEstoque[]
+  colheitas             Colheita[]
+  pacotesCriados        Pacote[]
+  eventosPacote         EventoPacote[]
 }
 
 model Setor {
@@ -381,6 +384,11 @@ model BoletimProducao {
   atualizadoEm     DateTime         @updatedAt
   itens            ItemProducao[]
   paradas          ParadaProducao[]
+  /// Cargas de toras serradas neste dia (rastreabilidade)
+  cargas           CargaToras[]     @relation("ConsumoToras")
+  /// Ciclos de estufa que receberam a madeira deste dia
+  ciclos           CicloSecagem[]   @relation("MadeiraCiclo")
+  pacotes          Pacote[]
 }
 
 enum TipoProduto {
@@ -467,6 +475,9 @@ model CicloSecagem {
   criadoEm       DateTime             @default(now())
   cargas         CargaCiclo[]
   checklist      ItemChecklistCiclo[]
+  /// Dias de serraria cuja madeira entrou neste ciclo (rastreabilidade)
+  boletins       BoletimProducao[]    @relation("MadeiraCiclo")
+  pacotes        Pacote[]
 
   @@index([estufaId, entrada])
   @@index([status])
@@ -505,7 +516,11 @@ model ItemChecklistCiclo {
 // ---------- Recebimento de toras ----------
 
 model CargaToras {
-  id               String           @id @default(cuid())
+  id               String            @id @default(cuid())
+  numero           Int               @unique @default(autoincrement())
+  colheitaId       String?
+  colheita         Colheita?         @relation(fields: [colheitaId], references: [id], onDelete: SetNull)
+  boletins         BoletimProducao[] @relation("ConsumoToras")
   data             DateTime
   origem           String
   talhao           String?
@@ -514,8 +529,8 @@ model CargaToras {
   comprimentoMedio Float? // m — usado no volume estimado
   observacoes      String?
   responsavelId    String
-  responsavel      Usuario          @relation(fields: [responsavelId], references: [id])
-  criadoEm         DateTime         @default(now())
+  responsavel      Usuario           @relation(fields: [responsavelId], references: [id])
+  criadoEm         DateTime          @default(now())
   itens            ItemCargaToras[]
 
   @@index([data])
@@ -563,4 +578,119 @@ model ItemEstoque {
   m3             Float
 
   @@index([levantamentoId])
+}
+
+// ---------- Rastreabilidade: da floresta ao pacote ----------
+
+enum TipoOrigem {
+  PROPRIA
+  ARRENDADA
+  TERCEIRO
+}
+
+/// Floresta / fazenda de onde vêm as toras.
+model OrigemFlorestal {
+  id           String     @id @default(cuid())
+  nome         String
+  tipo         TipoOrigem @default(TERCEIRO)
+  proprietario String? // proprietário ou fornecedor
+  municipio    String?
+  uf           String?
+  especie      String? // ex.: Pinus taeda
+  anoPlantio   Int?
+  areaHa       Float?
+  observacoes  String?
+  ativo        Boolean    @default(true)
+  criadoEm     DateTime   @default(now())
+  colheitas    Colheita[]
+}
+
+/// Derrubada (colheita) de um talhão: o começo da história de cada pacote.
+model Colheita {
+  id               String          @id @default(cuid())
+  numero           Int             @unique @default(autoincrement())
+  origemId         String
+  origem           OrigemFlorestal @relation(fields: [origemId], references: [id])
+  talhao           String?
+  inicio           DateTime        @db.Date
+  fim              DateTime?       @db.Date
+  equipe           String?
+  idadeAnos        Int?
+  volumeEstimadoM3 Float?
+  documento        String? // nota, licença ou autorização de corte
+  observacoes      String?
+  responsavelId    String
+  responsavel      Usuario         @relation(fields: [responsavelId], references: [id])
+  criadoEm         DateTime        @default(now())
+  cargas           CargaToras[]
+
+  @@index([origemId, inicio])
+}
+
+enum StatusPacote {
+  VERDE // formado na serraria, aguardando estufa ou venda verde
+  EM_ESTUFA
+  SECO // seco/classificado, em estoque
+  EXPEDIDO
+  CANCELADO
+}
+
+enum TipoEvento {
+  CRIADO
+  ENTRADA_ESTUFA
+  SAIDA_ESTUFA
+  MOVIMENTADO
+  EXPEDIDO
+  OBSERVACAO
+  ALTERADO
+  CANCELADO
+}
+
+/// Pacote de madeira serrada, identificado pela etiqueta com QR Code.
+model Pacote {
+  id           String           @id @default(cuid())
+  numero       Int              @unique @default(autoincrement())
+  status       StatusPacote
+  boletimId    String? // dia em que a madeira foi serrada
+  boletim      BoletimProducao? @relation(fields: [boletimId], references: [id], onDelete: SetNull)
+  cicloId      String? // ciclo de estufa em que secou
+  ciclo        CicloSecagem?    @relation(fields: [cicloId], references: [id], onDelete: SetNull)
+  espessura    Int // mm
+  largura      Int // mm
+  comprimento  Int // mm
+  pecas        Int
+  m3           Float
+  classe       String?
+  mercado      Mercado          @default(EXTERNO)
+  umidade      Float? // % na formação/saída da estufa
+  localizacao  String?
+  cliente      String?
+  notaFiscal   String?
+  destino      String?
+  expedidoEm   DateTime?
+  observacoes  String?
+  criadoPorId  String
+  criadoPor    Usuario          @relation(fields: [criadoPorId], references: [id])
+  criadoEm     DateTime         @default(now())
+  atualizadoEm DateTime         @updatedAt
+  eventos      EventoPacote[]
+
+  @@index([status])
+  @@index([boletimId])
+  @@index([cicloId])
+  @@index([criadoEm])
+}
+
+/// Linha do tempo do pacote (cada leitura/movimentação registrada).
+model EventoPacote {
+  id        String     @id @default(cuid())
+  pacoteId  String
+  pacote    Pacote     @relation(fields: [pacoteId], references: [id], onDelete: Cascade)
+  tipo      TipoEvento
+  descricao String
+  usuarioId String?
+  usuario   Usuario?   @relation(fields: [usuarioId], references: [id])
+  criadoEm  DateTime   @default(now())
+
+  @@index([pacoteId, criadoEm])
 }

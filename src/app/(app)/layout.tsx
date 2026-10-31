@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { CircleHelp } from "lucide-react";
 import { sair } from "@/app/actions/auth";
+import { BotaoSair } from "@/components/BotaoSair";
 import { BarraInferior, BuscaTopo, MenuLateral } from "@/components/Navegacao";
 import { SincronizadorOffline } from "@/components/SincronizadorOffline";
 import { Rodape } from "@/components/Rodape";
@@ -23,6 +24,32 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ]
     .filter(Boolean)
     .join(" · ");
+  // Sem nenhum módulo ativo (ex.: só tinha acesso à manutenção, que está desligada)
+  if (Object.keys(menus).length === 0) {
+    return (
+      <div className="min-h-dvh">
+        <header className="border-b border-stone-200 bg-white pt-[env(safe-area-inset-top)]">
+          <div className="mx-auto flex h-16 max-w-3xl items-center gap-3 px-4">
+            <Link href="/" className="flex items-center gap-2.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/marca.svg" alt="" className="h-7 w-auto" />
+              <span className="font-serif text-lg font-bold italic tracking-wide text-[#177009]">ARTEPINUS</span>
+            </Link>
+            <div className="ml-auto">
+              <BotaoSair sair={sair} variante="botao" />
+            </div>
+          </div>
+        </header>
+        <main className="mx-auto max-w-3xl px-4 pb-16 pt-6">
+          <p role="status" className="mb-6 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+            Seu usuário ainda não tem acesso ao sistema de produção. Fale com o gerente para liberar o seu perfil.
+          </p>
+          {children}
+          <Rodape className="mt-12 border-t border-stone-200/70 pt-6" />
+        </main>
+      </div>
+    );
+  }
   const naoLidas = await db.notificacao.count({ where: { usuarioId: eu.id, lida: false } });
 
   return (
@@ -64,7 +91,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </main>
       </div>
 
-      <BarraInferior menus={menus} salvo={salvo} podeLancarProducao={lancar} />
+      <BarraInferior menus={menus} salvo={salvo} />
     </div>
   );
 }
