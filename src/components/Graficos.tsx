@@ -50,7 +50,8 @@ export function ColunasEmpilhadas({
   const metas = meta ? dados.map((d) => Number(d[meta.chave] ?? 0)) : [];
   const escala = ticks(Math.max(...totais, ...metas, 1));
   const topo = escala[escala.length - 1];
-  const H = W < 480 ? 200 : 240, ESQ = 28, BASE = H - 24, ALTURA = BASE - 8;
+  // Margem esquerda conforme o tamanho do maior número do eixo
+  const H = W < 480 ? 200 : 240, ESQ = Math.max(28, 12 + String(topo).length * 7), BASE = H - 24, ALTURA = BASE - 8;
   const banda = (W - ESQ) / Math.max(dados.length, 1);
   const pularRotulo = banda < 34 ? Math.ceil(34 / banda) : 1;
   const largura = Math.min(24, banda * 0.6);

@@ -164,6 +164,12 @@ export function nomeMes(mes: string) {
   return s.replace(".", "").replace(" de ", "/");
 }
 
+/** "2026-10" → "outubro de 2026". */
+export function nomeMesLongo(mes: string) {
+  const [a, m] = mes.split("-").map(Number);
+  return new Date(Date.UTC(a, m - 1, 1)).toLocaleDateString("pt-BR", { timeZone: "UTC", month: "long", year: "numeric" });
+}
+
 /** Primeiro dia do mês e do mês seguinte (intervalo semiaberto) para filtrar boletins. */
 export function intervaloMes(mes: string) {
   const [a, m] = mes.split("-").map(Number);

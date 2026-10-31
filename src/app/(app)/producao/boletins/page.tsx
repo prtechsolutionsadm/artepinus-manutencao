@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
+import { SeletorMes } from "@/components/SeletorMes";
 import { BotaoLink, Titulo, Vazio } from "@/components/ui";
 import { formatarDuracao } from "@/lib/constantes";
 import { db } from "@/lib/db";
 import { podeProducao } from "@/lib/permissoes";
-import { calcularKpis, fmtM3, fmtPct, formatarDia, hojeSP, intervaloMes, mesDe, mesesAntes, nomeMes } from "@/lib/producao";
+import { calcularKpis, fmtM3, fmtPct, formatarDia, hojeSP, intervaloMes, mesDe, nomeMes } from "@/lib/producao";
+import { mesesComBoletim } from "@/lib/producao-dados";
 import { exigirProducao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Boletins da serraria" };
@@ -26,7 +28,6 @@ export default async function BoletinsPage({ searchParams }: { searchParams: Pro
     },
   });
   const total = calcularKpis(boletins);
-  const meses = Array.from({ length: 12 }, (_, i) => mesesAntes(atual, i));
 
   return (
     <>
@@ -43,20 +44,9 @@ export default async function BoletinsPage({ searchParams }: { searchParams: Pro
         Boletins da serraria
       </Titulo>
 
-      <nav aria-label="Mês" className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {meses.map((m) => (
-          <Link
-            key={m}
-            href={`/producao/boletins?mes=${m}`}
-            aria-current={m === mes ? "page" : undefined}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset ${
-              m === mes ? "bg-marca-600 text-white ring-marca-600" : "bg-white text-stone-600 ring-stone-200 hover:bg-stone-50"
-            }`}
-          >
-            {nomeMes(m)}
-          </Link>
-        ))}
-      </nav>
+      <div className="mb-5">
+        <SeletorMes mes={mes} atual={atual} base="/producao/boletins" comDados={await mesesComBoletim()} />
+      </div>
 
       {boletins.length > 0 && (
         <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">

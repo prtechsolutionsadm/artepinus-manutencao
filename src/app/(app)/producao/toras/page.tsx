@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight, Plus } from "lucide-react";
+import { SeletorMes } from "@/components/SeletorMes";
 import { BotaoLink, Titulo, Vazio } from "@/components/ui";
 import { db } from "@/lib/db";
 import { podeProducao } from "@/lib/permissoes";
-import { fmtM3, fmtNum, formatarDia, hojeSP, intervaloMes, m3Toras, mesDe, mesesAntes, nomeMes } from "@/lib/producao";
+import { fmtM3, fmtNum, formatarDia, hojeSP, intervaloMes, m3Toras, mesDe, nomeMes } from "@/lib/producao";
+import { mesesComCargas } from "@/lib/producao-dados";
 import { exigirProducao } from "@/lib/session";
 
 export const metadata: Metadata = { title: "Recebimento de toras" };
@@ -51,18 +53,9 @@ export default async function TorasPage({ searchParams }: { searchParams: Promis
       >
         Recebimento de toras
       </Titulo>
-      <nav aria-label="Mês" className="-mx-4 mb-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {Array.from({ length: 12 }, (_, i) => mesesAntes(atual, i)).map((m) => (
-          <Link
-            key={m}
-            href={`/producao/toras?mes=${m}`}
-            aria-current={m === mes ? "page" : undefined}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ring-1 ring-inset ${m === mes ? "bg-marca-600 text-white ring-marca-600" : "bg-white text-stone-600 ring-stone-200 hover:bg-stone-50"}`}
-          >
-            {nomeMes(m)}
-          </Link>
-        ))}
-      </nav>
+      <div className="mb-5">
+        <SeletorMes mes={mes} atual={atual} base="/producao/toras" comDados={await mesesComCargas()} />
+      </div>
 
       {cargas.length === 0 ? (
         <Vazio>Nenhuma carga registrada em {nomeMes(mes)}.</Vazio>

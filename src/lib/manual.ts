@@ -489,7 +489,8 @@ export const MANUAL: Secao[] = [
         titulo: "O que tem no painel",
         blocos: [
           { tipo: "lista", itens: [
-            "Escolha o mês no alto; as setas mostram a variação em relação ao mês anterior.",
+            "Em Gestão → Indicadores, escolha o mês no alto: as setas passam de mês em mês e, tocando no nome do mês, abre um calendário (os meses com lançamentos têm um ponto verde).",
+            "O painel tem abas: Visão geral (OEE e os índices, com a variação contra o mês anterior), Paradas, Pacotes e estoque e Comparativo mensal.",
             "Produção diária por tipo (bom, aproveitamento e refugo) com a marca da meta de cada dia — toque em Ver tabela para os números.",
             "Paradas por centro (mecânica, elétrica e operacional), o Pareto dos motivos e as paradas por equipamento.",
             "Comparativo mensal com produção, meta, refugo, tempo parado e todos os índices.",
