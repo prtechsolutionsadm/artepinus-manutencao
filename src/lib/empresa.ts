@@ -23,6 +23,7 @@ export const EMPRESA = {
     endereco: "",
     cidade: "", // ex.: "Cidade – UF"
     mapa: "", // link do Google Maps
+    instagram: "artepinus_ind", // usuário, sem @
   },
 };
 

@@ -18,6 +18,7 @@ import {
   Warehouse,
   type LucideIcon,
 } from "lucide-react";
+import { IconeInstagram } from "@/components/site/IconeInstagram";
 import { EMPRESA, anosDeHistoria } from "@/lib/empresa";
 
 const ETAPAS: { Icone: LucideIcon; titulo: string; texto: string }[] = [
@@ -43,13 +44,14 @@ export default function SitePage() {
     contato.telefone && { Icone: Phone, rotulo: "Telefone", valor: contato.telefone, href: `tel:${contato.telefone.replace(/\D/g, "")}` },
     contato.whatsapp && { Icone: MessageCircle, rotulo: "WhatsApp", valor: "Conversar pelo WhatsApp", href: `https://wa.me/${contato.whatsapp}` },
     contato.email && { Icone: Mail, rotulo: "E-mail", valor: contato.email, href: `mailto:${contato.email}` },
+    contato.instagram && { Icone: IconeInstagram, rotulo: "Instagram", valor: `@${contato.instagram}`, href: `https://www.instagram.com/${contato.instagram}/` },
     (contato.endereco || contato.cidade) && {
       Icone: MapPin,
       rotulo: "Endereço",
       valor: [contato.endereco, contato.cidade].filter(Boolean).join(" · "),
       href: contato.mapa || undefined,
     },
-  ].filter(Boolean) as { Icone: LucideIcon; rotulo: string; valor: string; href?: string }[];
+  ].filter(Boolean) as { Icone: React.ComponentType<{ className?: string }>; rotulo: string; valor: string; href?: string }[];
 
   return (
     <>

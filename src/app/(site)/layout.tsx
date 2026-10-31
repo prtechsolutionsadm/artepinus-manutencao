@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogIn, Menu } from "lucide-react";
+import { IconeInstagram } from "@/components/site/IconeInstagram";
 import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
 
 export const metadata: Metadata = {
@@ -33,7 +34,19 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               </a>
             ))}
           </nav>
-          <Link href="/sistema" className="btn-primario ml-auto hidden sm:inline-flex lg:ml-0">
+          {EMPRESA.contato.instagram && (
+            <a
+              href={`https://www.instagram.com/${EMPRESA.contato.instagram}/`}
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Instagram da Artepinus"
+              title="Instagram"
+              className="ml-auto hidden h-10 w-10 place-items-center rounded-xl text-stone-600 hover:bg-stone-100 hover:text-stone-900 sm:grid lg:ml-0"
+            >
+              <IconeInstagram className="h-5 w-5" />
+            </a>
+          )}
+          <Link href="/sistema" className="btn-primario hidden sm:inline-flex">
             <LogIn className="h-4 w-4" /> Acessar sistema
           </Link>
           <details className="group relative ml-auto sm:ml-0 lg:hidden">
@@ -46,6 +59,16 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
                   {l.label}
                 </a>
               ))}
+              {EMPRESA.contato.instagram && (
+                <a
+                  href={`https://www.instagram.com/${EMPRESA.contato.instagram}/`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 font-medium text-stone-700 hover:bg-stone-50"
+                >
+                  <IconeInstagram className="h-4 w-4" /> Instagram
+                </a>
+              )}
               <Link href="/sistema" className="btn-primario mt-2 w-full">
                 <LogIn className="h-4 w-4" /> Acessar sistema
               </Link>
@@ -66,6 +89,16 @@ export default function SiteLayout({ children }: { children: React.ReactNode }) 
               <br />
               CNPJ {EMPRESA.cnpj}
             </p>
+            {EMPRESA.contato.instagram && (
+              <a
+                href={`https://www.instagram.com/${EMPRESA.contato.instagram}/`}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-sm font-medium text-white ring-1 ring-inset ring-white/15 hover:bg-white/15"
+              >
+                <IconeInstagram className="h-4 w-4" /> @{EMPRESA.contato.instagram}
+              </a>
+            )}
           </div>
           <nav aria-label="Rodapé" className="grid grid-cols-2 gap-2 text-sm">
             {LINKS.map((l) => (
