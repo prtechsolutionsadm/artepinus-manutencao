@@ -4,9 +4,24 @@ import { ArrowRight, MapPin, Menu, Phone } from "lucide-react";
 import { IconeInstagram } from "@/components/site/IconeInstagram";
 import { CREDITO, EMPRESA, direitos } from "@/lib/empresa";
 
+const TITULO = "Artepinus · Madeira serrada de pinus desde 1983";
+const DESCRICAO = "Madeira serrada de pinus, seca em estufa, para o mercado interno e externo. Rastreabilidade de cada pacote, da floresta à expedição. Caçador – SC.";
+
 export const metadata: Metadata = {
-  title: { absolute: "Artepinus · Madeira serrada de pinus desde 1983" },
-  description: `${EMPRESA.razaoSocial}: madeira serrada de pinus, seca em estufa, com rastreabilidade da floresta ao pacote.`,
+  title: { absolute: TITULO },
+  description: DESCRICAO,
+  alternates: { canonical: "/" },
+  // Preview de compartilhamento (WhatsApp, redes sociais)
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    url: "/",
+    siteName: "Artepinus",
+    title: TITULO,
+    description: DESCRICAO,
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: "Artepinus · Madeira serrada de pinus, da floresta ao pacote" }],
+  },
+  twitter: { card: "summary_large_image", title: TITULO, description: DESCRICAO, images: ["/og.jpg"] },
 };
 
 const LINKS = [

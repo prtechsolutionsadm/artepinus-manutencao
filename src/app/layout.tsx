@@ -1,8 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { RegistrarSW } from "@/components/RegistrarSW";
+import { EMPRESA } from "@/lib/empresa";
 import "./globals.css";
 
+/** Endereço público do site (links absolutos do preview de compartilhamento). */
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? EMPRESA.site;
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: { default: "Artepinus", template: "%s · Artepinus" },
   description: "Artepinus: madeira serrada de pinus e sistema de produção",
   applicationName: "Artepinus",
@@ -10,7 +15,13 @@ export const metadata: Metadata = {
   creator: "PR Tech Solutions",
   publisher: "Artepinus Indústria e Comércio de Madeiras LTDA",
   appleWebApp: { capable: true, title: "Artepinus", statusBarStyle: "default" },
-  icons: { apple: "/icons/apple-touch-icon.png" },
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png", sizes: "64x64" },
+      { url: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: "/icons/apple-touch-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

@@ -12,6 +12,8 @@ export const EMPRESA = {
   /** PNG (transparente) para o Excel, que não aceita SVG. */
   logoPng: "/logo.png",
   desenvolvedor: "PR Tech Solutions",
+  /** Endereço público do site (preview de compartilhamento e links do QR). Troque ao usar domínio próprio. */
+  site: "https://artepinus.vercel.app",
   /**
    * Contato mostrado no site. Preencha com os dados reais: o site só mostra o que
    * estiver preenchido (nada de telefone ou endereço inventado).
