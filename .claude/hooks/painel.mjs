@@ -1,14 +1,40 @@
 #!/usr/bin/env node
-// Hook do Painel de Agentes: manda um resumo de cada evento do Claude Code para o painel.
-// Roda no PC e nas sessões da nuvem. Nunca trava nem atrapalha o Claude: sem configuração,
-// sem rede ou com erro, sai em silêncio (código 0) e não escreve nada na saída.
+// Hook da Central PR Tech: manda um resumo de cada evento do Claude Code para a central e, quando a central
+// responde, leva a resposta de volta para a sessão. Roda no PC e nas sessões da nuvem. Nunca trava nem atrapalha
+// o Claude: sem configuração, sem rede ou com erro, sai em silêncio (código 0) sem escrever nada.
+//
+// Três jeitos de rodar (o .claude/settings.json que o instalador grava já chama cada um no evento certo):
+//   node painel.mjs              eventos comuns (async): só avisa a central.
+//   node painel.mjs              no PermissionRequest (síncrono): avisa e, se alguém estiver olhando a central,
+//                                espera a resposta (permitir, recusar, responder a pergunta) por até 5 min. O
+//                                diálogo do terminal continua valendo; sem resposta da central, vale o terminal.
+//   node painel.mjs --escutar    no Stop (async + asyncRewake): depois que o Claude termina, fica ouvindo a central
+//                                por um tempo; uma mensagem digitada lá acorda o Claude com ela.
+//   node painel.mjs --statusline [-- <comando>]
+//                                linha de status: manda à central o uso do plano (5 h e semanal) e mostra a linha de
+//                                status que você já usava (o comando depois de `--` ou o do ~/.claude/settings.json).
+//   node painel.mjs --testar     testa a conexão com a central (rode na pasta do projeto).
+//   no SessionStart (síncrono, curto): recebe as tarefas do quadro do projeto e as põe no contexto do agente.
+//
+// O mesmo arquivo serve ao Codex: `instalar-hook --codex` grava uma cópia em ~/.codex com o provedor marcado.
+//
+// PAINEL_CONVERSA=0 manda só o começo dos prompts e respostas (sem a vista "Conversa" completa na central).
 //
 // Configuração (a primeira que existir):
 //   1. variáveis PAINEL_URL e PAINEL_TOKEN (na nuvem: nas variáveis do ambiente)
 //   2. arquivo ~/.painel-agentes.json  {"url": "...", "token": "..."}  (nos PCs)
-import { readFileSync } from 'node:fs';
-import { homedir, hostname } from 'node:os';
-import { basename, isAbsolute, join, relative } from 'node:path';
+import { spawn } from 'node:child_process';
+import { readFileSync, statSync, writeFileSync } from 'node:fs';
+import { homedir, hostname, tmpdir } from 'node:os';
+import { basename, isAbsolute, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+/** Versão do hook: a central avisa os projetos com um hook mais antigo que o atual. */
+export const VERSAO = 4;
+/** Codex: o instalador grava uma cópia deste arquivo com `globalThis.__PROVEDOR__ = 'codex'` na primeira linha. */
+export const PROVEDOR = globalThis.__PROVEDOR__ === 'codex' ? 'codex' : 'claude';
+/** Tamanho de prompts e respostas mandados (a vista "Conversa" usa o texto inteiro até aqui). */
+const TEXTO_MAX = process.env.PAINEL_CONVERSA === '0' ? 300 : 4000;
 
 function config() {
   if (process.env.PAINEL_URL) return { url: process.env.PAINEL_URL, token: process.env.PAINEL_TOKEN };
@@ -43,31 +69,34 @@ function git(dir) {
   return out;
 }
 
-const curto = (s, n = 160) => {
+export const curto = (s, n = 160) => {
   if (typeof s !== 'string') return '';
   const t = s.replace(/\s+/g, ' ').trim();
   return t.length > n ? `${t.slice(0, n - 1)}…` : t;
 };
+const corta = (s, n) => (typeof s === 'string' ? (s.length > n ? `${s.slice(0, n - 1)}…` : s) : undefined);
+const linhas = (s) => (typeof s === 'string' && s.length ? s.split('\n').length : 0);
 
-function resumo(ferramenta, input, dir) {
+function arquivo(p, dir) {
+  if (typeof p !== 'string') return '';
+  const r = isAbsolute(p) && dir ? relative(dir, p) : p;
+  return r && !r.startsWith('..') ? r.replace(/\\/g, '/') : basename(p);
+}
+
+export function resumo(ferramenta, input, dir) {
   const i = input || {};
-  const arq = (p) => {
-    if (typeof p !== 'string') return '';
-    const r = isAbsolute(p) && dir ? relative(dir, p) : p;
-    return r && !r.startsWith('..') ? r.replace(/\\/g, '/') : basename(p);
-  };
   switch (ferramenta) {
     case 'Read':
-      return `Lendo ${arq(i.file_path)}`;
+      return `Lendo ${arquivo(i.file_path, dir)}`;
     case 'Edit':
     case 'MultiEdit':
-      return `Editando ${arq(i.file_path)}`;
+      return `Editando ${arquivo(i.file_path, dir)}`;
     case 'Write':
-      return `Escrevendo ${arq(i.file_path)}`;
+      return `Escrevendo ${arquivo(i.file_path, dir)}`;
     case 'NotebookEdit':
-      return `Editando ${arq(i.notebook_path)}`;
+      return `Editando ${arquivo(i.notebook_path, dir)}`;
     case 'Bash':
-      return `Rodando: ${curto(i.description || i.command, 120)}`;
+      return `${i.run_in_background ? 'Em segundo plano' : 'Rodando'}: ${curto(i.description || i.command, 120)}`;
     case 'Grep':
       return `Procurando "${curto(i.pattern, 60)}"`;
     case 'Glob':
@@ -84,9 +113,13 @@ function resumo(ferramenta, input, dir) {
     case 'Agent':
       return `Subagente: ${curto(i.description || i.subagent_type || 'tarefa', 100)}`;
     case 'TodoWrite':
+    case 'TaskCreate':
+    case 'TaskUpdate':
       return 'Atualizando a lista de tarefas';
     case 'AskUserQuestion':
       return 'Fazendo uma pergunta';
+    case 'ExitPlanMode':
+      return 'Apresentando o plano';
     default:
       if (ferramenta && ferramenta.startsWith('mcp__')) {
         const [, srv, tool] = ferramenta.split('__');
@@ -96,20 +129,124 @@ function resumo(ferramenta, input, dir) {
   }
 }
 
-async function main() {
-  const cfg = config();
-  if (!cfg) return;
-  const h = lerEntrada();
-  if (!h || !h.hook_event_name || !h.session_id) return;
+const STATUS = { pending: 'pendente', in_progress: 'andamento', completed: 'feita', deleted: 'feita' };
 
-  const dir = process.env.CLAUDE_PROJECT_DIR || h.cwd || process.cwd();
+/** Rótulo legível de uma regra "sempre permitir" sugerida pelo Claude Code. */
+export function rotuloSugestao(s) {
+  if (!s || typeof s !== 'object') return 'Sugestão';
+  const onde = { session: 'nesta sessão', localSettings: 'neste projeto (só você)', projectSettings: 'neste projeto', userSettings: 'em todos os projetos' }[s.destination] || '';
+  if (s.type === 'addRules' && Array.isArray(s.rules)) {
+    const r = s.rules.map((x) => (x.ruleContent ? `${x.toolName}(${x.ruleContent})` : x.toolName)).join(', ');
+    return `Não perguntar de novo: ${r} ${onde}`.trim();
+  }
+  if (s.type === 'setMode') return `Mudar para o modo ${s.mode} ${onde}`.trim();
+  if (s.type === 'addDirectories') return `Liberar ${(s.directories || []).join(', ')} ${onde}`.trim();
+  return `${s.type} ${onde}`.trim();
+}
+
+/** O que o pedido de permissão quer fazer, para mostrar na central. */
+export function pedido(h, dir) {
+  const i = h.tool_input || {};
+  const p = {};
+  if (h.tool_name === 'Bash') p.alvo = corta(i.command, 600);
+  else if (i.file_path) p.alvo = arquivo(i.file_path, dir);
+  else if (i.url) p.alvo = corta(i.url, 300);
+  else if (i.plan) p.alvo = corta(i.plan, 600);
+  if (h.tool_name === 'Edit') {
+    p.antes = corta(i.old_string, 1500);
+    p.depois = corta(i.new_string, 1500);
+  } else if (h.tool_name === 'Write') p.depois = corta(i.content, 1500);
+  if (Array.isArray(h.permission_suggestions) && h.permission_suggestions.length) {
+    p.sugestoes = h.permission_suggestions.slice(0, 4).map(rotuloSugestao);
+  }
+  if (h.tool_name === 'AskUserQuestion' && Array.isArray(i.questions)) {
+    p.perguntas = i.questions.slice(0, 6).map((q) => ({
+      pergunta: String(q.question ?? ''),
+      titulo: q.header,
+      multipla: q.multiSelect === true,
+      opcoes: (Array.isArray(q.options) ? q.options : []).map((o) => ({ rotulo: String(o.label ?? ''), descricao: o.description })),
+    }));
+  }
+  return p;
+}
+
+/** Tokens somados do transcript (cada mensagem uma vez) e o modelo da última resposta. */
+function tokens(caminho) {
+  try {
+    if (!caminho || statSync(caminho).size > 60 * 1024 * 1024) return {};
+    const vistos = new Set();
+    const t = { entrada: 0, saida: 0, cacheLeitura: 0, cacheEscrita: 0 };
+    let modelo;
+    for (const linha of readFileSync(caminho, 'utf8').split('\n')) {
+      if (!linha.includes('"usage"')) continue;
+      let o;
+      try {
+        o = JSON.parse(linha);
+      } catch {
+        continue;
+      }
+      const m = o && o.message;
+      if (!m || !m.usage) continue;
+      const id = m.id || o.uuid;
+      if (vistos.has(id)) continue;
+      vistos.add(id);
+      t.entrada += m.usage.input_tokens || 0;
+      t.saida += m.usage.output_tokens || 0;
+      t.cacheLeitura += m.usage.cache_read_input_tokens || 0;
+      t.cacheEscrita += m.usage.cache_creation_input_tokens || 0;
+      if (m.model) modelo = m.model;
+    }
+    return { tokens: t, modelo };
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * CI: o resultado de `gh pr checks`, `gh run watch` ou `gh run view` que o agente rodou. Falha = sirene na sala até um
+ * CI verde (ou 10 min); sucesso depois de uma falha = festa.
+ */
+export function marcoCI(comando, saida) {
+  if (!/\bgh\s+(pr\s+checks|run\s+(watch|view)|workflow\s+view)\b/.test(comando)) return undefined;
+  const ramo = (comando.match(/--branch[= ]([\w./-]+)/) || [])[1];
+  const onde = ramo ? ` (${ramo})` : '';
+  if (/\b(fail|failed|failing|failure)\b|✗|\bX\s|conclusion:\s*failure|exit code [1-9]/i.test(saida)) return { tipo: 'ci-falhou', texto: `CI falhou${onde}` };
+  if (/All checks were successful|conclusion:\s*success|completed\s+success|✓\s.*(success|completed)|\bpassed\b/i.test(saida)) return { tipo: 'ci-ok', texto: `CI verde${onde}` };
+  return undefined;
+}
+
+/** PR aberto/mesclado, push, release: viram festa no feed (e aviso no celular). */
+export function marco(h) {
+  const i = h.tool_input || {};
+  let saida = '';
+  try {
+    saida = typeof h.tool_response === 'string' ? h.tool_response : JSON.stringify(h.tool_response ?? '');
+  } catch {}
+  const urlPr = (saida.match(/https:\/\/github\.com\/[^\s"'\\]+\/pull\/\d+/) || [])[0];
+  const num = urlPr ? ` #${urlPr.split('/').pop()}` : '';
+  if (h.tool_name === 'Bash' && typeof i.command === 'string') {
+    const c = i.command;
+    const ci = marcoCI(c, saida);
+    if (ci) return ci;
+    if (/\bgh\s+pr\s+create\b/.test(c) && urlPr) return { tipo: 'pr-aberto', texto: `PR${num} aberto`, url: urlPr };
+    if (/\bgh\s+pr\s+merge\b/.test(c) && !/error|failed|falh/i.test(saida)) return { tipo: 'pr-mesclado', texto: `PR${num} mesclado`, url: urlPr };
+    if (/\bgh\s+release\s+create\b/.test(c)) return { tipo: 'release', texto: 'Release publicada' };
+    if (/\bgit\s+push\b/.test(c) && !/rejected|error|fatal/i.test(saida)) return { tipo: 'push', texto: 'Push feito' };
+  }
+  if (h.tool_name === 'mcp__github__create_pull_request') {
+    const n = (saida.match(/"number"\s*:\s*(\d+)/) || [])[1];
+    return { tipo: 'pr-aberto', texto: `PR${n ? ` #${n}` : num} aberto`, url: urlPr };
+  }
+  if (h.tool_name === 'mcp__github__merge_pull_request') return { tipo: 'pr-mesclado', texto: 'PR mesclado' };
+  return undefined;
+}
+
+function base(h, dir) {
   const g = git(dir);
-  const nuvem = process.env.CLAUDE_CODE_REMOTE === 'true';
+  const nuvem = PROVEDOR === 'claude' && process.env.CLAUDE_CODE_REMOTE === 'true';
   const idNuvem = process.env.CLAUDE_CODE_REMOTE_SESSION_ID;
-
-  const ev = {
+  return {
     v: 1,
-    evento: h.hook_event_name,
     sessao: h.session_id,
     projeto: g.repo || basename(dir),
     pasta: dir,
@@ -117,25 +254,370 @@ async function main() {
     maquina: nuvem ? 'nuvem' : hostname(),
     branch: g.branch,
     link: nuvem && idNuvem ? `https://claude.ai/code/${idNuvem.replace(/^cse_/, 'session_')}` : undefined,
+    ...(PROVEDOR === 'codex' ? { provedor: 'codex' } : {}),
     em: new Date().toISOString(),
   };
-  if (h.tool_name) {
-    ev.ferramenta = h.tool_name;
-    ev.detalhe = resumo(h.tool_name, h.tool_input, dir);
-  }
-  if (h.hook_event_name === 'UserPromptSubmit') ev.prompt = curto(h.prompt, 300);
-  if (h.hook_event_name === 'Notification') ev.mensagem = curto(h.message, 200);
-
-  const headers = { 'Content-Type': 'application/json' };
-  if (cfg.token) headers.Authorization = `Bearer ${cfg.token}`;
-  await fetch(`${cfg.url.replace(/\/$/, '')}/api/eventos`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(ev),
-    signal: AbortSignal.timeout(4000),
-  });
 }
 
-main()
-  .catch(() => {})
-  .finally(() => process.exit(0));
+/** Comandos em segundo plano que o Claude Code lista no Stop (`background_tasks`): o formato varia, então lê com cuidado. */
+export function tarefasFundo(lista) {
+  if (!Array.isArray(lista)) return undefined;
+  return lista
+    .filter((t) => t && typeof t === 'object' && (!t.status || /run|pend|start/i.test(String(t.status))))
+    .slice(0, 10)
+    .map((t) => ({
+      id: String(t.id ?? t.task_id ?? t.taskId ?? t.shell_id ?? t.shellId ?? t.bash_id ?? ''),
+      rotulo: curto(t.description || t.command || t.label || t.name || 'Comando em segundo plano', 120),
+    }))
+    .filter((t) => t.id);
+}
+
+function montar(h, dir) {
+  const ev = { ...base(h, dir), evento: h.hook_event_name, hv: VERSAO };
+  const i = h.tool_input || {};
+  if (h.tool_name) {
+    ev.ferramenta = h.tool_name;
+    ev.detalhe = resumo(h.tool_name, i, dir);
+    if (h.tool_use_id) ev.usoId = h.tool_use_id;
+  }
+  switch (h.hook_event_name) {
+    case 'SessionStart':
+      if (h.model) ev.modelo = String(h.model);
+      break;
+    case 'UserPromptSubmit':
+      ev.prompt = corta(h.prompt, TEXTO_MAX);
+      break;
+    case 'Notification':
+      ev.mensagem = curto(h.message, 200);
+      break;
+    case 'PreToolUse':
+      if (h.tool_name === 'Task' || h.tool_name === 'Agent') {
+        ev.subagente = { descricao: curto(i.description || i.subagent_type || 'tarefa', 140), tipo: i.subagent_type, fundo: i.run_in_background === true };
+      }
+      if (h.tool_name === 'Bash' && !i.run_in_background && h.tool_use_id) {
+        ev.shell = { op: 'inicio', id: h.tool_use_id, rotulo: curto(i.description || i.command, 120), fundo: false };
+      }
+      if (h.tool_name === 'TodoWrite' && Array.isArray(i.todos)) {
+        ev.tarefas = i.todos.slice(0, 60).map((t) => ({ texto: curto(t.content || t.activeForm, 180), status: STATUS[t.status] || 'pendente' }));
+      }
+      break;
+    case 'PostToolUse': {
+      if (h.tool_name === 'Edit') ev.linhas = { mais: linhas(i.new_string), menos: linhas(i.old_string) };
+      else if (h.tool_name === 'MultiEdit' && Array.isArray(i.edits)) {
+        ev.linhas = i.edits.reduce((a, e) => ({ mais: a.mais + linhas(e.new_string), menos: a.menos + linhas(e.old_string) }), { mais: 0, menos: 0 });
+      } else if (h.tool_name === 'Write') ev.linhas = { mais: linhas(i.content), menos: 0 };
+      if (h.tool_name === 'TaskCreate') {
+        const r = h.tool_response || {};
+        const id = r.task?.id ?? r.id ?? r.taskId;
+        ev.tarefa = { op: 'criar', id: id != null ? String(id) : undefined, texto: curto(i.subject || i.description, 180), status: 'pendente' };
+      }
+      if (h.tool_name === 'TaskUpdate') {
+        ev.tarefa = { op: 'atualizar', id: i.taskId != null ? String(i.taskId) : undefined, texto: i.subject ? curto(i.subject, 180) : undefined, status: STATUS[i.status] };
+      }
+      if (h.tool_name === 'Bash') {
+        const r = h.tool_response && typeof h.tool_response === 'object' ? h.tool_response : {};
+        const idFundo = r.backgroundTaskId ?? r.background_task_id ?? r.shellId ?? r.shell_id ?? r.bash_id;
+        if (i.run_in_background) {
+          ev.shell = { op: 'inicio', id: String(idFundo ?? h.tool_use_id ?? Date.now()), rotulo: curto(i.description || i.command, 120), fundo: true };
+        } else if (h.tool_use_id) ev.shell = { op: 'fim', id: h.tool_use_id };
+      }
+      if (h.tool_name === 'KillShell' || h.tool_name === 'TaskStop') {
+        const id = i.shell_id ?? i.task_id ?? i.id;
+        if (id != null) ev.shell = { op: 'fim', id: String(id) };
+      }
+      const m = marco(h);
+      if (m) ev.marco = m;
+      break;
+    }
+    case 'TaskCreated':
+      ev.tarefa = { op: 'criar', id: h.task_id != null ? String(h.task_id) : undefined, texto: curto(h.task_subject, 180), status: 'pendente' };
+      break;
+    case 'TaskCompleted':
+      ev.tarefa = { op: 'atualizar', id: h.task_id != null ? String(h.task_id) : undefined, texto: curto(h.task_subject, 180), status: 'feita' };
+      break;
+    case 'PermissionRequest':
+      ev.pedido = pedido(h, dir);
+      break;
+    case 'Stop': {
+      if (h.last_assistant_message) ev.resposta = corta(String(h.last_assistant_message), TEXTO_MAX);
+      const fundo = tarefasFundo(h.background_tasks);
+      if (fundo) ev.fundo = fundo;
+      const t = tokens(h.transcript_path);
+      if (t.tokens) ev.tokens = t.tokens;
+      if (t.modelo) ev.modelo = t.modelo;
+      break;
+    }
+  }
+  return ev;
+}
+export { montar };
+
+function cliente(cfg) {
+  const raiz = cfg.url.replace(/\/$/, '');
+  const headers = { 'Content-Type': 'application/json' };
+  if (cfg.token) headers.Authorization = `Bearer ${cfg.token}`;
+  return {
+    async enviar(ev, ms = 4000) {
+      const r = await fetch(`${raiz}/api/eventos`, { method: 'POST', headers, body: JSON.stringify(ev), signal: AbortSignal.timeout(ms) });
+      return r.ok ? r.json() : null;
+    },
+    async consultar(caminho) {
+      const r = await fetch(`${raiz}${caminho}`, { headers, signal: AbortSignal.timeout(40_000) });
+      if (!r.ok) throw new Error(String(r.status));
+      return r.json();
+    },
+  };
+}
+
+const dorme = (ms) => new Promise((r) => setTimeout(r, ms));
+
+/** Transforma a decisão da central na saída que o Claude Code entende (undefined = vale o terminal). */
+export function saidaDecisao(d, h, provedor = PROVEDOR) {
+  const decisao = (x) => ({ hookSpecificOutput: { hookEventName: 'PermissionRequest', decision: x } });
+  // O Codex só aceita allow/deny com mensagem (sem regras, interrupt nem updatedInput).
+  const codex = provedor === 'codex';
+  if (d.acao === 'permitir') {
+    const x = { behavior: 'allow' };
+    const sug = Array.isArray(h.permission_suggestions) ? h.permission_suggestions[d.sugestao] : undefined;
+    if (!codex && Number.isInteger(d.sugestao) && sug) x.updatedPermissions = [sug];
+    return decisao(x);
+  }
+  if (d.acao === 'negar') {
+    const x = { behavior: 'deny', message: d.motivo ? `Recusado pelo usuário na Central PR Tech: ${d.motivo}` : 'Recusado pelo usuário na Central PR Tech.' };
+    if (d.interromper && !codex) x.interrupt = true;
+    return decisao(x);
+  }
+  if (d.acao === 'responder') {
+    if (codex) return undefined;
+    const qs = h.tool_input && Array.isArray(h.tool_input.questions) ? h.tool_input.questions : [];
+    const answers = {};
+    for (const r of d.respostas || []) {
+      const q = qs[r.pergunta];
+      if (!q) return undefined;
+      const partes = (r.opcoes || []).map((i) => q.options?.[i]?.label).filter(Boolean);
+      if (r.outro) partes.push(r.outro);
+      if (!partes.length) return undefined;
+      answers[q.question] = partes.join(', ');
+    }
+    if (Object.keys(answers).length !== qs.length) return undefined;
+    return decisao({ behavior: 'allow', updatedInput: { ...h.tool_input, answers } });
+  }
+  return undefined; // 'terminal'
+}
+
+/** PermissionRequest: avisa e espera a resposta da central. */
+async function esperarDecisao(api, h, ev) {
+  const r = await api.enviar(ev, 8000);
+  // Uma regra automática da central já decidiu.
+  if (r && r.decisao) {
+    const out = saidaDecisao(r.decisao, h);
+    if (out) process.stdout.write(JSON.stringify(out));
+    return;
+  }
+  if (!r || !r.pedido || !r.espera) return;
+  const fim = Date.now() + r.espera * 1000;
+  const q = `/api/eventos/decisao?pedido=${encodeURIComponent(r.pedido)}&sessao=${encodeURIComponent(h.session_id)}`;
+  while (Date.now() < fim) {
+    let x;
+    try {
+      x = await api.consultar(q);
+    } catch {
+      await dorme(3000);
+      continue;
+    }
+    if (x.cancelado) return;
+    if (x.decisao) {
+      const out = saidaDecisao(x.decisao, h);
+      if (out) process.stdout.write(JSON.stringify(out));
+      return;
+    }
+  }
+  // Tempo esgotado: a central tira o pedido da tela e vale o terminal.
+  await api.enviar({ ...base(h, ev.pasta), evento: 'PedidoEncerrado' }).catch(() => {});
+}
+
+/** Stop (asyncRewake): ouve a central; uma mensagem acorda o Claude (código 2, texto no stderr). */
+async function escutar(api, h, dir) {
+  const desde = Date.now();
+  let erros = 0;
+  for (;;) {
+    let x;
+    try {
+      x = await api.consultar(`/api/eventos/mensagens?sessao=${encodeURIComponent(h.session_id)}&desde=${desde}`);
+      erros = 0;
+    } catch {
+      if (++erros > 20) return 0;
+      await dorme(5000);
+      continue;
+    }
+    if (x.parar) return 0;
+    if (Array.isArray(x.mensagens) && x.mensagens.length) {
+      const autores = [...new Set(x.mensagens.map((m) => m.autor).filter(Boolean))];
+      const texto = x.mensagens.map((m) => m.texto).join('\n\n');
+      await api.enviar({ ...base(h, dir), evento: 'MensagemEntregue', prompt: corta(texto, TEXTO_MAX), hv: VERSAO }).catch(() => {});
+      process.stderr.write(
+        `${autores.length ? `${autores.join(', ')} (da equipe) mandou` : 'O usuário mandou'} esta mensagem pela Central PR Tech (é como se tivesse digitado no terminal; trate como o próximo pedido):\n\n${texto}\n`,
+      );
+      return 2;
+    }
+  }
+}
+
+/** Pasta de configuração da conta (o trecho antes de "/projects/" no transcript, CLAUDE_CONFIG_DIR ou ~/.claude). */
+export function pastaConta(h, env = process.env) {
+  const tp = typeof h?.transcript_path === 'string' ? h.transcript_path.replace(/\\/g, '/') : '';
+  const at = tp.lastIndexOf('/projects/');
+  if (at > 0) return tp.slice(0, at);
+  const doEnv = (env.CLAUDE_CONFIG_DIR ?? '').split(',')[0].trim();
+  return doEnv || join(homedir(), '.claude');
+}
+
+function janela(w) {
+  if (!w || typeof w !== 'object') return undefined;
+  const bruto = w.used_percentage ?? w.utilization ?? w.used_percent;
+  const pct = typeof bruto === 'string' && bruto.trim() ? Number(bruto) : bruto;
+  if (typeof pct !== 'number' || !Number.isFinite(pct)) return undefined;
+  const r = w.resets_at;
+  const reset = typeof r === 'number' ? (r < 1e12 ? r * 1000 : r) : typeof r === 'string' ? Date.parse(r) || undefined : undefined;
+  return { pct: Math.min(100, Math.max(0, pct)), reset };
+}
+
+/** Uso do plano a partir do JSON da linha de status (`rate_limits`), ou undefined sem os números. */
+export function usoDe(h, env = process.env) {
+  const rl = h && typeof h === 'object' ? h.rate_limits : undefined;
+  if (!rl || typeof rl !== 'object') return undefined;
+  const cincoH = janela(rl.five_hour);
+  const semana = janela(rl.seven_day);
+  if (!cincoH && !semana) return undefined;
+  const nuvem = env.CLAUDE_CODE_REMOTE === 'true';
+  const pasta = basename(pastaConta(h, env));
+  return {
+    conta: nuvem ? 'nuvem' : `${hostname()}:${pasta}`,
+    nome: nuvem ? 'Nuvem' : `${hostname()}${pasta !== '.claude' ? ` (${pasta})` : ''}`,
+    cincoH,
+    semana,
+  };
+}
+
+/** A linha de status que a pessoa já usava: o comando depois de `--` ou o do ~/.claude/settings.json (se não for o nosso). */
+function linhaOriginal(argv) {
+  const i = argv.indexOf('--');
+  if (i >= 0) return argv.slice(i + 1).join(' ').trim();
+  try {
+    const s = JSON.parse(readFileSync(join(homedir(), '.claude', 'settings.json'), 'utf8'));
+    const c = s && s.statusLine && s.statusLine.command;
+    if (typeof c === 'string' && !c.includes('painel.mjs')) return c;
+  } catch {}
+  return '';
+}
+
+/** Linha de status: manda o uso (no máximo uma vez por minuto por conta) e mostra a linha original. */
+async function statusline(cfg, entrada, argv) {
+  let h = null;
+  try {
+    h = JSON.parse(entrada);
+  } catch {}
+  const original = linhaOriginal(argv);
+  const filho = original
+    ? new Promise((ok) => {
+        const p = spawn(original, { shell: true, stdio: ['pipe', 'inherit', 'inherit'] });
+        p.on('exit', (c) => ok(c ?? 0));
+        p.on('error', () => ok(0));
+        // A linha original pode nem ler a entrada (ex.: `echo`): fechar o cano cedo não é erro.
+        p.stdin.on('error', () => {});
+        p.stdin.end(entrada);
+      })
+    : null;
+  const uso = h && cfg ? usoDe(h) : undefined;
+  if (uso && h.session_id) {
+    const marca = join(tmpdir(), `painel-uso-${uso.conta.replace(/[^\w.-]/g, '_')}`);
+    let ultimo = 0;
+    try {
+      ultimo = Number(readFileSync(marca, 'utf8')) || 0;
+    } catch {}
+    if (Date.now() - ultimo > 60_000) {
+      try {
+        writeFileSync(marca, String(Date.now()));
+      } catch {}
+      const dir = process.env.CLAUDE_PROJECT_DIR || h.cwd || process.cwd();
+      await cliente(cfg)
+        .enviar({ ...base(h, dir), evento: 'Uso', hv: VERSAO, uso }, 2500)
+        .catch(() => {});
+    }
+  }
+  if (filho) return filho;
+  // Sem linha original: uma curtinha nossa.
+  const fmt = (w, n) => (w ? `${n} ${Math.round(w.pct)}%` : '');
+  const partes = [h?.model?.display_name, uso && fmt(uso.cincoH, '5h'), uso && fmt(uso.semana, 'sem')].filter(Boolean);
+  process.stdout.write(partes.join(' · ') || 'Central PR Tech');
+  return 0;
+}
+
+/** --testar: manda um evento de teste e diz se a central recebeu. */
+async function testar(cfg) {
+  if (!cfg) {
+    process.stdout.write('✗ Sem configuração: defina PAINEL_URL e PAINEL_TOKEN ou rode o instalador com --pc.\n');
+    return 1;
+  }
+  const dir = process.env.CLAUDE_PROJECT_DIR || process.cwd();
+  const ev = { ...base({ session_id: `teste:${hostname()}` }, dir), evento: 'Teste', hv: VERSAO };
+  try {
+    const r = await fetch(`${cfg.url.replace(/\/$/, '')}/api/eventos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...(cfg.token ? { Authorization: `Bearer ${cfg.token}` } : {}) },
+      body: JSON.stringify(ev),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (r.status === 401) {
+      process.stdout.write('✗ A central recusou o token (confira PAINEL_TOKEN).\n');
+      return 1;
+    }
+    if (!r.ok) {
+      process.stdout.write(`✗ A central respondeu ${r.status}.\n`);
+      return 1;
+    }
+    process.stdout.write(`✓ A central recebeu o teste de ${ev.projeto} (${ev.origem === 'nuvem' ? 'nuvem' : ev.maquina}). Hook versão ${VERSAO}.\n`);
+    return 0;
+  } catch (e) {
+    process.stdout.write(`✗ Não deu para falar com ${cfg.url}: ${e && e.message ? e.message : e}\n`);
+    return 1;
+  }
+}
+
+async function main() {
+  const cfg = config();
+  if (process.argv.includes('--testar')) return testar(cfg);
+  if (process.argv.includes('--statusline')) {
+    let entrada = '';
+    try {
+      entrada = readFileSync(0, 'utf8');
+    } catch {}
+    return statusline(cfg, entrada, process.argv);
+  }
+  if (!cfg) return 0;
+  const h = lerEntrada();
+  if (!h || !h.hook_event_name || !h.session_id) return 0;
+  const dir = process.env.CLAUDE_PROJECT_DIR || h.cwd || process.cwd();
+  const api = cliente(cfg);
+
+  if (process.argv.includes('--escutar')) return PROVEDOR === 'codex' ? 0 : escutar(api, h, dir);
+  const ev = montar(h, dir);
+  if (h.hook_event_name === 'PermissionRequest') await esperarDecisao(api, h, ev);
+  else if (h.hook_event_name === 'SessionStart') {
+    // Começo de sessão (síncrono): as tarefas do quadro do projeto entram no contexto do agente.
+    const r = await api.enviar(ev, 8000).catch(() => null);
+    if (r && typeof r.contexto === 'string' && r.contexto) {
+      if (PROVEDOR === 'codex') process.stdout.write(`${r.contexto}\n`);
+      else process.stdout.write(JSON.stringify({ hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: r.contexto } }));
+    }
+  } else await api.enviar(ev);
+  return 0;
+}
+
+// Só roda quando é executado (os testes importam as funções sem disparar nada).
+const executado = process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (executado) {
+  main()
+    .catch(() => 0)
+    .then((codigo) => process.exit(codigo || 0));
+}
